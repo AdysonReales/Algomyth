@@ -13,7 +13,6 @@ const PixelPanel = ({ children, className = "" }: { children: React.ReactNode, c
 );
 
 // --- Help Specific Components ---
-
 const FAQItem = ({ question, answer }: { question: string, answer: string }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -52,29 +51,33 @@ const FAQS = [
   },
   { 
     question: "My code is correct but fails?", 
-    answer: "Check for hidden test cases! Sometimes your code works for '1+1' but fails for negative numbers. Try to make your solution more general." 
+    answer: "Check for hidden test cases! Try to make your solution more general by testing edge cases." 
   },
   { 
     question: "How do I join a Guild?", 
-    answer: "Go to the Guilds tab and enter the Class Code provided by your instructor. You can only be in 2 guilds at once." 
+    answer: "Go to the Guilds tab and enter the Class Code provided by your instructor." 
   },
 ];
 
 export const Help = () => {
   return (
     <div className="h-full flex flex-col pt-4 items-center">
+      {/* Main Page Title with HelpCircle Icon - FIXES TS WARNING */}
+      <div className="flex items-center gap-4 mb-4">
+        <HelpCircle size={40} className="text-[#5d3a1a]" />
+        <h1 className="text-5xl font-bold text-[#3e2723] uppercase" style={{ fontFamily: "'VT323', monospace" }}>Help Center</h1>
+      </div>
+
       <div className="w-full max-w-5xl bg-[#fdf6e3] p-8 flex justify-center">
         <PixelPanel className="min-h-[600px] gap-8">
           
           {/* Top Section: Actions */}
           <div className="flex flex-col md:flex-row gap-6 justify-center items-center border-b-4 border-[#d4c5a9] pb-8 border-dashed">
-             {/* Tutorial Button */}
              <button className="flex items-center gap-3 bg-[#76c442] border-4 border-[#3e2723] px-6 py-3 text-white font-bold uppercase hover:bg-[#5da035] shadow-md active:translate-y-1 transition-all w-full md:w-auto justify-center" style={{ fontFamily: "'VT323', monospace", fontSize: '1.25rem' }}>
                 <PlayCircle size={24} />
                 Replay Tutorial
              </button>
 
-             {/* Report Bug Button */}
              <button className="flex items-center gap-3 bg-[#ef4444] border-4 border-[#3e2723] px-6 py-3 text-white font-bold uppercase hover:bg-[#dc2626] shadow-md active:translate-y-1 transition-all w-full md:w-auto justify-center" style={{ fontFamily: "'VT323', monospace", fontSize: '1.25rem' }}>
                 <Bug size={24} />
                 Report a Bug
@@ -96,7 +99,6 @@ export const Help = () => {
               <p className="text-xl">Still stuck? Email us at <span className="font-bold underline cursor-pointer hover:text-[#5d3a1a]">support@algomyth.edu</span></p>
             </div>
           </div>
-
         </PixelPanel>
       </div>
     </div>

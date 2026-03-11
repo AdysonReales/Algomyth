@@ -1,0 +1,246 @@
+import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { Trash2, CheckSquare, Square, X, Search } from 'lucide-react';
+
+interface MessagesPanelProps {
+  userData: any;
+  onSearch: (query: string) => void;
+  chatTarget?: any;
+  clearChatTarget?: () => void;
+}
+
+export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget }: MessagesPanelProps) => {
+  const [inbox, setInbox] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Trash Mode States
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedForTrash, setSelectedForTrash] = useState<string[]>([]);
+  
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // 1. Initial Load & Real-time Polling
+  useEffect(() => {
+    fetchInbox();
+    const interval = setInterval(fetchInbox, 5000); // Polling every 5 seconds
+    return () => clearInterval(interval);
+  }, [selectedUser]); // Dependency on selectedUser ensures chat history updates too
+
+  // 2. Auto-scroll to bottom of chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
+  // 3. Handle Redirect from "Send Message" Modal
+  useEffect(() => {
+    if (chatTarget && userData) {
+      if (chatTarget._id === userData._id) {
+        if (clearChatTarget) clearChatTarget();
+        return;
+      }
+      setSelectedUser(chatTarget);
+      const history = inbox.filter(m => 
+        m.sender._id === chatTarget._id || m.receiver._id === chatTarget._id
+      ).reverse();
+      setChatHistory(history);
+      if (clearChatTarget) clearChatTarget();
+    }
+  }, [chatTarget, inbox, userData, clearChatTarget]);
+
+  const fetchInbox = async () => {
+    try {
+      // Cache-busting URL to ensure Screen A sees Screen B's messages immediately
+      const res = await axios.get(`http://localhost:5000/api/messages/inbox?t=${Date.now()}`);
+      setInbox(res.data);
+      setLoading(false);
+
+      // Refresh current chat history if a user is selected
+      if (selectedUser) {
+        const history = res.data.filter((m: any) => 
+          m.sender._id === selectedUser._id || m.receiver._id === selectedUser._id
+        ).reverse();
+        setChatHistory(history);
+      }
+    } catch (err) {
+      console.error("Inbox load failed", err);
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = newMessage.trim();
+    if (!text || !selectedUser) return;
+
+    try {
+      setNewMessage(''); // Clear input immediately for better UX
+      const res = await axios.post('http://localhost:5000/api/messages/send', {
+        receiverId: selectedUser._id,
+        content: text
+      });
+      
+      // Update local state instantly
+      const sentMsg = { ...res.data, sender: userData, receiver: selectedUser };
+      setChatHistory(prev => [...prev, sentMsg]);
+      fetchInbox(); // Sync sidebar
+    } catch (err) {
+      alert("Failed to send. Try again.");
+    }
+  };
+
+  const markAsRead = async (senderId: string) => {
+  try {
+    // This will mark all unread messages from this specific person as read
+    await axios.post('http://localhost:5000/api/messages/clear-alerts', { fromUser: senderId });
+  } catch (err) {
+    console.error("Failed to mark as read");
+  }
+  };
+
+  // Logic to group conversations and filter out YOURSELF from the sidebar
+  const uniqueConvos = Array.from(new Set(
+    inbox
+      .map(m => (m.sender._id === userData?._id ? m.receiver._id : m.sender._id))
+      .filter(id => id !== userData?._id) // Filter out Ady from Ady's inbox
+  )).map(id => inbox.find(m => m.sender._id === id || m.receiver._id === id));
+
+  const toggleTrashSelection = (userId: string) => {
+    setSelectedForTrash(prev => 
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleTrashMessages = async () => {
+    if (selectedForTrash.length === 0) return;
+    if (window.confirm(`Delete ${selectedForTrash.length} conversation(s)?`)) {
+      try {
+        await axios.post('http://localhost:5000/api/messages/delete-bulk', { 
+          targetUserIds: selectedForTrash 
+        });
+        setSelectedForTrash([]);
+        setIsEditMode(false);
+        if (selectedUser && selectedForTrash.includes(selectedUser._id)) setSelectedUser(null);
+        fetchInbox();
+      } catch (err) {
+        alert("Failed to delete messages");
+      }
+    }
+  };
+
+  return (
+    <div className="h-[600px] flex bg-[#fdf6e3] border-4 border-[#5d3a1a]" style={{ fontFamily: "'VT323', monospace" }}>
+      
+      {/* 📁 SIDEBAR */}
+      <div className="w-80 border-r-4 border-[#5d3a1a] bg-[#d4a373] flex flex-col shadow-lg">
+        {/* Sidebar Search */}
+        <div className="p-3 bg-[#b88a5f] border-b-4 border-[#5d3a1a]">
+          <div className="relative flex items-center">
+            <input 
+              type="text" 
+              placeholder="Search @player..." 
+              className="w-full p-2 pr-10 bg-[#f4e4bc] border-4 border-[#5d3a1a] text-xl outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(searchQuery); }}
+            />
+            <Search className="absolute right-3 text-[#5d3a1a] cursor-pointer" size={20} onClick={() => onSearch(searchQuery)} />
+          </div>
+        </div>
+
+        {/* Sidebar Header */}
+        <div className="p-4 bg-[#5d3a1a] text-white flex justify-between items-center">
+          <span className="text-2xl uppercase font-bold tracking-widest">{loading ? "..." : "Inbox"}</span>
+          <button onClick={() => { setIsEditMode(!isEditMode); setSelectedForTrash([]); }}>
+            {isEditMode ? <X size={24} /> : <Trash2 size={24} />}
+          </button>
+        </div>
+        
+        {/* Inbox List */}
+        <div className="flex-1 overflow-y-auto">
+          {uniqueConvos.length === 0 && !loading ? (
+             <div className="p-8 text-center text-[#3e2723] opacity-40 italic">No conversations yet</div>
+          ) : (
+            uniqueConvos.map((msg: any) => {
+              const otherUser = msg.sender._id === userData?._id ? msg.receiver : msg.sender;
+              const isSelected = selectedForTrash.includes(otherUser._id);
+              const isUnread = !msg.isRead && msg.receiver._id === userData._id;
+
+              return (
+                <div key={otherUser._id} className="relative border-b-2 border-[#5d3a1a]/20">
+                  <button 
+                    disabled={isEditMode}
+                    onClick={() => {
+                      setSelectedUser(otherUser);
+                      markAsRead(otherUser._id);
+                      setChatHistory(inbox.filter(m => m.sender._id === otherUser._id || m.receiver._id === otherUser._id).reverse());
+                    }}
+                    className={`w-full p-4 flex items-center gap-3 transition-colors ${selectedUser?._id === otherUser._id ? 'bg-[#f4e4bc]' : 'hover:bg-[#f4e4bc]/50'}`}
+                  >
+                    {isEditMode && (
+                      <div onClick={(e) => { e.stopPropagation(); toggleTrashSelection(otherUser._id); }}>
+                        {isSelected ? <CheckSquare size={24} /> : <Square size={24} />}
+                      </div>
+                    )}
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-[#b88a5f] border-2 border-[#5d3a1a] flex items-center justify-center text-2xl">👤</div>
+                      {isUnread && <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 border-2 border-white rounded-full animate-pulse" />}
+                    </div>
+                    <div className="text-left overflow-hidden text-[#3e2723]">
+                      <div className={`text-xl truncate ${isUnread ? 'font-black text-black' : 'font-bold'}`}>@{otherUser.username}</div>
+                      <div className="text-sm truncate opacity-70">{msg.content}</div>
+                    </div>
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+        {isEditMode && selectedForTrash.length > 0 && (
+          <button onClick={handleTrashMessages} className="p-4 bg-red-600 text-white text-2xl uppercase font-bold">Trash ({selectedForTrash.length})</button>
+        )}
+      </div>
+
+      {/* 💬 CHAT WINDOW */}
+      <div className="flex-1 flex flex-col bg-[#fdf6e3]/50">
+        {selectedUser ? (
+          <>
+            <div className="p-4 border-b-4 border-[#5d3a1a] bg-[#f4e4bc] text-2xl font-bold uppercase text-[#3e2723]">
+              To: @{selectedUser.username}
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+              {chatHistory.map((m, i) => {
+                const isMe = m.sender._id === userData._id || m.sender === userData._id;
+                return (
+                  <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] p-3 border-4 border-[#5d3a1a] ${isMe ? 'bg-[#76c442] text-white shadow-md' : 'bg-white text-[#3e2723] shadow-sm'}`}>
+                      <div className="text-xl leading-tight">{m.content}</div>
+                      <div className={`text-[10px] mt-1 opacity-50 ${isMe ? 'text-right' : 'text-left'}`}>
+                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef} />
+            </div>
+            <form onSubmit={handleSendMessage} className="p-4 border-t-4 border-[#5d3a1a] bg-[#f4e4bc] flex gap-3">
+              <input 
+                value={newMessage} 
+                onChange={e => setNewMessage(e.target.value)} 
+                className="flex-1 p-3 border-4 border-[#5d3a1a] bg-white text-xl outline-none shadow-inner" 
+                placeholder="Write message..." 
+              />
+              <button className="bg-[#76c442] border-4 border-[#3e2723] px-8 text-white font-bold uppercase hover:scale-105 transition-transform">Send</button>
+            </form>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center opacity-20 text-4xl font-bold uppercase text-[#5d3a1a]">Select a chat</div>
+        )}
+      </div>
+    </div>
+  );
+};
