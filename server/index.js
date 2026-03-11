@@ -12,7 +12,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173", 
-    "https://algomyth.vercel.app/" // Replace this with your actual Vercel URL!
+    "https://algomyth.vercel.app" // Replace this with your actual Vercel URL!
   ],
   credentials: true
 }));
