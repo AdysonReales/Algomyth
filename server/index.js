@@ -9,7 +9,13 @@ require('dotenv').config();
 const app = express();
 
 // --- MIDDLEWARE ---
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173", 
+    "https://algomyth-v2.vercel.app" // Replace this with your actual Vercel URL!
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // --- ROUTES ---
