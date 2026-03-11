@@ -48,34 +48,7 @@ router.post('/register', async (req, res) => {
         await user.save();
 
         // --- NODEMAILER FAKE EMAIL LOGIC (TC-3) ---
-        try {
-            let testAccount = await nodemailer.createTestAccount();
-            let transporter = nodemailer.createTransport({
-                host: "smtp.ethereal.email",
-                port: 587,
-                secure: false,
-                auth: {
-                    user: testAccount.user, 
-                    pass: testAccount.pass, 
-                },
-            });
-
-            let info = await transporter.sendMail({
-                from: '"Algomyth System ⚔️" <noreply@algomyth.com>',
-                to: email, 
-                subject: "Welcome to Algomyth! Verify Your Account",
-                html: `
-                  <h2 style="color: #5d3a1a; font-family: monospace;">Welcome, ${username}!</h2>
-                  <p>Your <b>${role}</b> account has been successfully created.</p>
-                  <p>Click <a href="http://localhost:5173">here</a> to enter the world.</p>
-                `,
-            });
-
-            console.log("\n✉️  EMAIL SENT!");
-            console.log("👉 Click here to view it: %s\n", nodemailer.getTestMessageUrl(info));
-        } catch (emailErr) {
-            console.error("Failed to send test email:", emailErr);
-        }
+        // REMOVED
         // ------------------------------------------
 
         res.status(201).json({ message: "Account Created! Check your terminal for the email link." });
