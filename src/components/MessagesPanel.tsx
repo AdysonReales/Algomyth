@@ -26,9 +26,9 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
   // 1. Initial Load & Real-time Polling
   useEffect(() => {
     fetchInbox();
-    const interval = setInterval(fetchInbox, 5000); // Polling every 5 seconds
+    const interval = setInterval(fetchInbox, 5000); 
     return () => clearInterval(interval);
-  }, [selectedUser]); // Dependency on selectedUser ensures chat history updates too
+  }, [selectedUser]); 
 
   // 2. Auto-scroll to bottom of chat
   useEffect(() => {
@@ -44,7 +44,7 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
       }
       setSelectedUser(chatTarget);
       const history = inbox.filter(m => 
-        m.sender._id === chatTarget._id || m.receiver._id === chatTarget._id
+        m.sender?._id === chatTarget._id || m.receiver?._id === chatTarget._id
       ).reverse();
       setChatHistory(history);
       if (clearChatTarget) clearChatTarget();
@@ -53,15 +53,13 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
 
   const fetchInbox = async () => {
     try {
-      // Cache-busting URL to ensure Screen A sees Screen B's messages immediately
-      const res = await axios.get(`http://localhost:5000/api/messages/inbox?t=${Date.now()}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/messages/inbox?t=${Date.now()}`);
       setInbox(res.data);
       setLoading(false);
 
-      // Refresh current chat history if a user is selected
       if (selectedUser) {
         const history = res.data.filter((m: any) => 
-          m.sender._id === selectedUser._id || m.receiver._id === selectedUser._id
+          m.sender?._id === selectedUser._id || m.receiver?._id === selectedUser._id
         ).reverse();
         setChatHistory(history);
       }
@@ -77,36 +75,33 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
     if (!text || !selectedUser) return;
 
     try {
-      setNewMessage(''); // Clear input immediately for better UX
-      const res = await axios.post('http://localhost:5000/api/messages/send', {
+      setNewMessage('');
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/messages/send`, {
         receiverId: selectedUser._id,
         content: text
       });
       
-      // Update local state instantly
       const sentMsg = { ...res.data, sender: userData, receiver: selectedUser };
       setChatHistory(prev => [...prev, sentMsg]);
-      fetchInbox(); // Sync sidebar
+      fetchInbox(); 
     } catch (err) {
       alert("Failed to send. Try again.");
     }
   };
 
   const markAsRead = async (senderId: string) => {
-  try {
-    // This will mark all unread messages from this specific person as read
-    await axios.post('http://localhost:5000/api/messages/clear-alerts', { fromUser: senderId });
-  } catch (err) {
-    console.error("Failed to mark as read");
-  }
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/messages/clear-alerts`, { fromUser: senderId });
+    } catch (err) {
+      console.error("Failed to mark as read");
+    }
   };
 
-  // Logic to group conversations and filter out YOURSELF from the sidebar
   const uniqueConvos = Array.from(new Set(
     inbox
-      .map(m => (m.sender._id === userData?._id ? m.receiver._id : m.sender._id))
-      .filter(id => id !== userData?._id) // Filter out Ady from Ady's inbox
-  )).map(id => inbox.find(m => m.sender._id === id || m.receiver._id === id));
+      .map(m => (m.sender?._id === userData?._id ? m.receiver?._id : m.sender?._id))
+      .filter(id => id && id !== userData?._id)
+  )).map(id => inbox.find(m => m.sender?._id === id || m.receiver?._id === id));
 
   const toggleTrashSelection = (userId: string) => {
     setSelectedForTrash(prev => 
@@ -118,7 +113,7 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
     if (selectedForTrash.length === 0) return;
     if (window.confirm(`Delete ${selectedForTrash.length} conversation(s)?`)) {
       try {
-        await axios.post('http://localhost:5000/api/messages/delete-bulk', { 
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/messages/delete-bulk`, { 
           targetUserIds: selectedForTrash 
         });
         setSelectedForTrash([]);
@@ -136,7 +131,6 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
       
       {/* 📁 SIDEBAR */}
       <div className="w-80 border-r-4 border-[#5d3a1a] bg-[#d4a373] flex flex-col shadow-lg">
-        {/* Sidebar Search */}
         <div className="p-3 bg-[#b88a5f] border-b-4 border-[#5d3a1a]">
           <div className="relative flex items-center">
             <input 
@@ -151,7 +145,6 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
           </div>
         </div>
 
-        {/* Sidebar Header */}
         <div className="p-4 bg-[#5d3a1a] text-white flex justify-between items-center">
           <span className="text-2xl uppercase font-bold tracking-widest">{loading ? "..." : "Inbox"}</span>
           <button onClick={() => { setIsEditMode(!isEditMode); setSelectedForTrash([]); }}>
@@ -159,29 +152,37 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
           </button>
         </div>
         
-        {/* Inbox List */}
         <div className="flex-1 overflow-y-auto">
           {uniqueConvos.length === 0 && !loading ? (
-             <div className="p-8 text-center text-[#3e2723] opacity-40 italic">No conversations yet</div>
+             <div className="p-8 text-center text-[#3e2723] opacity-40 italic uppercase font-bold">No archives found.</div>
           ) : (
             uniqueConvos.map((msg: any) => {
-              const otherUser = msg.sender._id === userData?._id ? msg.receiver : msg.sender;
+              const otherUser = msg.sender?._id === userData?._id ? msg.receiver : msg.sender;
+              if (!otherUser) return null;
+
               const isSelected = selectedForTrash.includes(otherUser._id);
-              const isUnread = !msg.isRead && msg.receiver._id === userData._id;
+              const isUnread = !msg.isRead && msg.receiver?._id === userData?._id;
 
               return (
-                <div key={otherUser._id} className="relative border-b-2 border-[#5d3a1a]/20">
-                  <button 
-                    disabled={isEditMode}
-                    onClick={() => {
+                <div 
+                  key={otherUser._id} 
+                  className={`relative border-b-2 border-[#5d3a1a]/20 cursor-pointer transition-all
+                    ${selectedUser?._id === otherUser._id ? 'bg-[#f4e4bc]' : 'hover:bg-[#f4e4bc]/50'}
+                    ${isSelected ? 'bg-red-200' : ''}
+                  `}
+                  onClick={() => {
+                    if (isEditMode) {
+                      toggleTrashSelection(otherUser._id);
+                    } else {
                       setSelectedUser(otherUser);
                       markAsRead(otherUser._id);
-                      setChatHistory(inbox.filter(m => m.sender._id === otherUser._id || m.receiver._id === otherUser._id).reverse());
-                    }}
-                    className={`w-full p-4 flex items-center gap-3 transition-colors ${selectedUser?._id === otherUser._id ? 'bg-[#f4e4bc]' : 'hover:bg-[#f4e4bc]/50'}`}
-                  >
+                      setChatHistory(inbox.filter(m => m.sender?._id === otherUser._id || m.receiver?._id === otherUser._id).reverse());
+                    }
+                  }}
+                >
+                  <div className="p-4 flex items-center gap-3">
                     {isEditMode && (
-                      <div onClick={(e) => { e.stopPropagation(); toggleTrashSelection(otherUser._id); }}>
+                      <div className="text-[#5d3a1a]">
                         {isSelected ? <CheckSquare size={24} /> : <Square size={24} />}
                       </div>
                     )}
@@ -193,14 +194,14 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
                       <div className={`text-xl truncate ${isUnread ? 'font-black text-black' : 'font-bold'}`}>@{otherUser.username}</div>
                       <div className="text-sm truncate opacity-70">{msg.content}</div>
                     </div>
-                  </button>
+                  </div>
                 </div>
               );
             })
           )}
         </div>
         {isEditMode && selectedForTrash.length > 0 && (
-          <button onClick={handleTrashMessages} className="p-4 bg-red-600 text-white text-2xl uppercase font-bold">Trash ({selectedForTrash.length})</button>
+          <button onClick={handleTrashMessages} className="p-4 bg-red-600 text-white text-2xl uppercase font-bold border-t-4 border-black">Trash Archives ({selectedForTrash.length})</button>
         )}
       </div>
 
@@ -213,7 +214,7 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
             </div>
             <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
               {chatHistory.map((m, i) => {
-                const isMe = m.sender._id === userData._id || m.sender === userData._id;
+                const isMe = m.sender?._id === userData?._id || m.sender === userData?._id;
                 return (
                   <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] p-3 border-4 border-[#5d3a1a] ${isMe ? 'bg-[#76c442] text-white shadow-md' : 'bg-white text-[#3e2723] shadow-sm'}`}>
@@ -234,7 +235,7 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
                 className="flex-1 p-3 border-4 border-[#5d3a1a] bg-white text-xl outline-none shadow-inner" 
                 placeholder="Write message..." 
               />
-              <button className="bg-[#76c442] border-4 border-[#3e2723] px-8 text-white font-bold uppercase hover:scale-105 transition-transform">Send</button>
+              <button className="bg-[#76c442] border-4 border-[#3e2723] px-8 text-white font-bold uppercase hover:scale-105 transition-transform shadow-[0_4px_0_#3e2723] active:translate-y-1 active:shadow-none">Send</button>
             </form>
           </>
         ) : (

@@ -3,7 +3,7 @@ const router = express.Router();
 const Message = require('../models/Message');
 const { protect } = require('../middleware/authMiddleware');
 
-// GET INBOX (Fetch all messages involving the user)
+// GET INBOX
 router.get('/inbox', protect, async (req, res) => {
   try {
     const userId = req.user._id;
@@ -19,12 +19,12 @@ router.get('/inbox', protect, async (req, res) => {
   }
 });
 
-// FIX: Changed 'recipient' to 'receiver' to match your Schema
+// GET UNREAD COUNT
 router.get('/unread-count', protect, async (req, res) => {
   try {
     const count = await Message.countDocuments({ 
       receiver: req.user._id, 
-      isRead: false // CHANGED FROM read
+      isRead: false // Standardized to isRead
     });
     res.json({ count });
   } catch (err) {
@@ -32,30 +32,29 @@ router.get('/unread-count', protect, async (req, res) => {
   }
 });
 
-// NEW: Fetch the 5 most recent unread alerts for the dropdown
+// GET NOTIFICATIONS
 router.get('/notifications', protect, async (req, res) => {
   try {
     const alerts = await Message.find({ 
       receiver: req.user._id, 
-      isRead: false // CHANGED FROM read
+      isRead: false 
     })
     .sort({ createdAt: -1 })
     .limit(5)
     .populate('sender', 'username');
 
-    console.log(`📬 Found ${alerts.length} unread alerts for ${req.user.username}`);
     res.json(alerts);
   } catch (err) {
     res.status(500).json({ message: "Error" });
   }
 });
 
-// NEW: Mark all messages from a specific dropdown as read (Clear All)
+// CLEAR ALERTS
 router.post('/clear-alerts', protect, async (req, res) => {
   try {
     await Message.updateMany(
-      { receiver: req.user._id, isRead: false }, // CHANGED FROM read
-      { $set: { isRead: true } } // CHANGED FROM read
+      { receiver: req.user._id, isRead: false },
+      { $set: { isRead: true } }
     );
     res.json({ message: "Alerts cleared" });
   } catch (err) {
@@ -75,7 +74,7 @@ router.post('/send', protect, async (req, res) => {
       sender: req.user._id,
       receiver: receiverId,
       content,
-      read: false // Explicitly set to false for new messages
+      isRead: false // Standardized to isRead
     });
 
     await newMessage.save();
@@ -86,11 +85,13 @@ router.post('/send', protect, async (req, res) => {
   }
 });
 
+// BULK DELETE
 router.post('/delete-bulk', protect, async (req, res) => {
   try {
-    const { targetUserIds } = req.body; // Array of IDs to clear
+    const { targetUserIds } = req.body;
     const myId = req.user._id;
 
+    // This wipes all traces of messages between you and the selected users
     await Message.deleteMany({
       $or: [
         { sender: myId, receiver: { $in: targetUserIds } },

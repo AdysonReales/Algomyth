@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// --- Types ---
 interface Task {
   _id: string;
   nodeTitle: string;
@@ -14,8 +13,8 @@ interface Task {
 export const TaskDashboard = ({ 
   onSelectTask, 
   userData, 
-  setUserData,        // Add this!
-  achievementEmojis   // Add this!
+  setUserData,        
+  achievementEmojis   
 }: { 
   onSelectTask: (task: any) => void, 
   userData: any,
@@ -30,11 +29,10 @@ export const TaskDashboard = ({
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        // 1. Fetch everything in parallel to avoid multiple re-renders
         const [soloRes, dailyRes, achRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/tasks/solo-pool'),
-          axios.get('http://localhost:5000/api/tasks/dailies'),
-          axios.get('http://localhost:5000/api/achievements') 
+          axios.get(`${import.meta.env.VITE_API_URL}/api/tasks/solo-pool`),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/tasks/dailies`),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/achievements`) 
         ]);
 
         setSoloNodes(soloRes.data.sort((a: any, b: any) => a.requiredStreak - b.requiredStreak));
@@ -49,7 +47,6 @@ export const TaskDashboard = ({
     fetchAllData();
   }, []);
 
-  // --- COLUMN 1: SOLO ADVENTURE ---
   const renderSoloColumn = () => {
     let highestClearedIndex = -1;
     soloNodes.forEach((node, idx) => { if (node.isCleared) highestClearedIndex = idx; });
@@ -71,7 +68,6 @@ export const TaskDashboard = ({
     );
   };
 
-  // --- COLUMN 2: DAILIES (Main + Bought) ---
   const renderDailiesColumn = () => {
     return (
       <TaskListWrapper title="Dailies">
@@ -88,9 +84,15 @@ export const TaskDashboard = ({
             <div>
               <div className="text-[#3e2723] text-xs font-bold mb-2 border-b-2 border-[#5d3a1a]/20 pb-1 uppercase">Bought Quests</div>
               <div className="flex flex-col gap-3">
-                {dailyData.boughtQuests.length > 0 ? (
+                {dailyData.boughtQuests && dailyData.boughtQuests.length > 0 ? (
                   dailyData.boughtQuests.map((inv: any, i) => (
-                    <TaskNode key={inv._id} node={inv.item} index={i} isBought onClick={() => onSelectTask(inv.item)} />
+                    <TaskNode 
+                      key={inv._id} 
+                      node={inv.item} 
+                      index={i} 
+                      isBought 
+                      onClick={() => onSelectTask(inv.item)} 
+                    />
                   ))
                 ) : (
                   <div className="p-4 border-2 border-dashed border-[#5d3a1a]/20 text-center text-[#5d3a1a]/40 text-xs italic">
@@ -104,109 +106,76 @@ export const TaskDashboard = ({
     );
   };
 
-  // --- COLUMN 3: ACHIEVEMENTS & BADGES ---
-const renderAchievementsColumn = () => {
-  // Debug log to ensure data is flowing correctly
-  console.log("👀 MY ACHIEVEMENTS:", userData?.achievements);
-
-  // Function to handle pinning an achievement to a display slot
-  const handleAchievementClick = async (achKey: string) => {
-  const isUnlocked = userData?.achievements?.includes(achKey);
-  
-  // 1. Safety check for lock status
-  if (!isUnlocked) {
-    alert("Quest not yet complete!");
-    return;
-  }
-
-  // 2. DUPLICATE CHECK: Check if the key is already in the pinnedAchievements array
-  const isAlreadyPinned = userData?.pinnedAchievements?.some((key: string) => key === achKey);
-  
-  if (isAlreadyPinned) {
-    alert("This badge is already on your display! Remove it first if you want to move slots.");
-    return;
-  }
-
-  const slot = prompt("Which display slot? (Enter 1-5)");
-  const slotIndex = parseInt(slot || "0") - 1;
-
-  if (slotIndex >= 0 && slotIndex < 5) {
-    try {
-      const res = await axios.post('http://localhost:5000/api/auth/pin-achievement', { 
-        achKey, 
-        slotIndex 
-      });
+  const renderAchievementsColumn = () => {
+    const handleAchievementClick = async (achKey: string) => {
+      const isUnlocked = userData?.achievements?.includes(achKey);
       
-      setUserData({ 
-        ...userData, 
-        pinnedAchievements: res.data.pinnedAchievements 
-      });
-    } catch (err) {
-      alert("Failed to update display.");
-    }
-  }
-};
+      if (!isUnlocked) {
+        alert("Quest not yet complete!");
+        return;
+      }
 
-  return (
-    <TaskListWrapper title="Achievements">
-      <div className="flex flex-col gap-4 mt-4 overflow-y-auto custom-scrollbar max-h-[480px] pr-2">
-        {achievements.length > 0 ? (
-          achievements.map((ach) => {
-            // Check if the achievement is unlocked
-            const isUnlocked = userData?.achievements?.includes(ach.key);
-            // Get the specific emoji for this achievement key
-            const displayEmoji = achievementEmojis[ach.key] || '🏆';
+      const isAlreadyPinned = userData?.pinnedAchievements?.some((key: string) => key === achKey);
+      
+      if (isAlreadyPinned) {
+        alert("This badge is already on your display! Remove it first if you want to move slots.");
+        return;
+      }
 
-            return (
-              <div 
-                key={ach.key} 
-                onClick={() => handleAchievementClick(ach.key)}
-                className={`relative border-4 p-3 flex flex-col shadow-md transition-all cursor-pointer group
-                  ${isUnlocked 
-                    ? 'bg-[#f4e4bc] border-[#5d3a1a] opacity-100 hover:scale-[1.02] active:scale-95' 
-                    : 'bg-[#3e2723]/10 border-[#5d3a1a]/20 opacity-80 grayscale pointer-events-none' 
-                  }`}
-              >
-                <div className="flex items-center gap-3">
-                  {/* DYNAMIC ICON: Uses the specific emoji from the map */}
-                  <div className={`w-12 h-12 border-2 border-[#5d3a1a] flex items-center justify-center text-2xl shrink-0 transition-all
-                    ${isUnlocked ? 'bg-[#f59e0b]' : 'bg-[#2b1b17]'}`}
-                  >
-                    {isUnlocked ? displayEmoji : '🛡️'}
-                  </div>
+      const slot = prompt("Which display slot? (Enter 1-5)");
+      const slotIndex = parseInt(slot || "0") - 1;
 
-                  <div className="flex-1 overflow-hidden">
-                    <div className="font-bold text-[#3e2723] text-lg uppercase leading-tight truncate" style={{ fontFamily: "'VT323', monospace" }}>
-                      {ach.title}
+      if (slotIndex >= 0 && slotIndex < 5) {
+        try {
+          const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/pin-achievement`, { achKey, slotIndex });
+          setUserData({ ...userData, pinnedAchievements: res.data.pinnedAchievements });
+        } catch (err) {
+          alert("Failed to update display.");
+        }
+      }
+    };
+
+    return (
+      <TaskListWrapper title="Achievements">
+        <div className="flex flex-col gap-4 mt-4 overflow-y-auto custom-scrollbar max-h-[480px] pr-2">
+          {achievements.length > 0 ? (
+            achievements.map((ach) => {
+              const isUnlocked = userData?.achievements?.includes(ach.key);
+              const displayEmoji = achievementEmojis[ach.key] || '🏆';
+
+              return (
+                <div 
+                  key={ach.key} 
+                  onClick={() => handleAchievementClick(ach.key)}
+                  className={`relative border-4 p-3 flex flex-col shadow-md transition-all cursor-pointer group
+                    ${isUnlocked ? 'bg-[#f4e4bc] border-[#5d3a1a] opacity-100 hover:scale-[1.02] active:scale-95' : 'bg-[#3e2723]/10 border-[#5d3a1a]/20 opacity-80 grayscale pointer-events-none'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 border-2 border-[#5d3a1a] flex items-center justify-center text-2xl shrink-0 transition-all ${isUnlocked ? 'bg-[#f59e0b]' : 'bg-[#2b1b17]'}`}>
+                      {isUnlocked ? displayEmoji : '🛡️'}
                     </div>
-                    
-                    <div className={`text-[10px] font-bold uppercase italic 
-                      ${isUnlocked ? 'text-green-700' : 'text-[#5d3a1a] opacity-70'}`}>
-                      {isUnlocked ? '★ Click to Pin!' : 'Locked'}
+                    <div className="flex-1 overflow-hidden">
+                      <div className="font-bold text-[#3e2723] text-lg uppercase leading-tight truncate" style={{ fontFamily: "'VT323', monospace" }}>{ach.title}</div>
+                      <div className={`text-[10px] font-bold uppercase italic ${isUnlocked ? 'text-green-700' : 'text-[#5d3a1a] opacity-70'}`}>
+                        {isUnlocked ? '★ Click to Pin!' : 'Locked'}
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-2 p-2 bg-[#fdf6e3] border-2 border-dashed border-[#d4c5a9] text-[#5d3a1a] text-xs leading-tight">
-                  <span className="font-bold uppercase text-[9px] block mb-1 text-[#8b5a2b]">How to unlock:</span>
-                  {ach.description}
-                </div>
-
-                {!isUnlocked && (
-                  <div className="absolute top-2 right-2 bg-[#5d3a1a] text-white text-[8px] px-1 font-bold uppercase">
-                    Locked
+                  <div className="mt-2 p-2 bg-[#fdf6e3] border-2 border-dashed border-[#d4c5a9] text-[#5d3a1a] text-xs leading-tight">
+                    <span className="font-bold uppercase text-[9px] block mb-1 text-[#8b5a2b]">How to unlock:</span>
+                    {ach.description}
                   </div>
-                )}
-              </div>
-            );
-          })
-        ) : (
-          <div className="text-center text-[#5d3a1a] opacity-50 italic mt-10">No achievements found in database.</div>
-        )}
-      </div>
-    </TaskListWrapper>
-  );
-};
+                  {!isUnlocked && <div className="absolute top-2 right-2 bg-[#5d3a1a] text-white text-[8px] px-1 font-bold uppercase">Locked</div>}
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center text-[#5d3a1a] opacity-50 italic mt-10">No achievements found in database.</div>
+          )}
+        </div>
+      </TaskListWrapper>
+    );
+  };
 
   if (loading) return <div className="h-full flex items-center justify-center text-2xl font-bold text-[#5d3a1a]">SYNCING ALGOMYTH...</div>;
 
@@ -239,6 +208,9 @@ const TaskListWrapper = ({ title, children }: any) => (
 );
 
 const TaskNode = ({ node, index, isDaily, isBought, onClick }: any) => {
+  // Defensive check: If node is somehow undefined, do not crash
+  if (!node) return null;
+
   const diffColor = node.difficulty === 'Boss' ? 'bg-[#ef4444]' : node.difficulty === 'Medium' ? 'bg-[#f59e0b]' : 'bg-[#76c442]';
   return (
     <div 
@@ -250,7 +222,7 @@ const TaskNode = ({ node, index, isDaily, isBought, onClick }: any) => {
         {isBought ? '📜' : index + 1}
       </div>
       <div className="ml-3 overflow-hidden">
-        <div className="font-bold text-[#3e2723] text-sm md:text-md uppercase truncate" style={{ fontFamily: "'VT323', monospace" }}>{node.nodeTitle}</div>
+        <div className="font-bold text-[#3e2723] text-sm md:text-md uppercase truncate" style={{ fontFamily: "'VT323', monospace" }}>{node.nodeTitle || node.title || "Unknown Quest"}</div>
         <div className="text-[#5d3a1a] text-[10px] font-bold uppercase">
           {isDaily ? 'Daily Bounty' : isBought ? 'Bought Quest' : node.isCleared ? '✓ Cleared' : '★ Current'}
         </div>

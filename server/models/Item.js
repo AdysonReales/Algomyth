@@ -8,12 +8,16 @@ const itemSchema = new mongoose.Schema({
     enum: ['Head', 'Body', 'Accessory', 'Pet', 'Consumable', 'Quest'], 
     required: true 
   },
-  image: { type: String, required: true }, // URL or Path
+  image: { type: String, required: true },
   price: { type: Number, default: 0 },
   classReq: { type: String, enum: ['knight', 'mage', 'rogue', 'all'], default: 'all' },
-  // For pets/accessories in subfolders
   folder: { type: String, default: '' }, 
   variant: { type: String, default: '' },
+  
+  // --- CRITICAL ADDITION ---
+  // This links the shop item to a specific task in your TaskPool
+  unlocksTaskId: { type: mongoose.Schema.Types.ObjectId, ref: 'TaskPool', default: null },
+  
   stats: {
     hp: { type: Number, default: 0 },
     xpBonus: { type: Number, default: 0 },

@@ -12,6 +12,7 @@ const UserSchema = new mongoose.Schema({
     default: 'student' 
   },
 
+
   // --- PROGRESSION & CURRENCY ---
   stats: {
     level: { type: Number, default: 1 },
@@ -34,6 +35,7 @@ const UserSchema = new mongoose.Schema({
     musicVolume: { type: Number, default: 50 },
     sfxVolume: { type: Number, default: 50 }
   },
+  
 
   // --- ACHIEVEMENTS & DASHBOARD ---
   achievements: { type: [String], default: [] },
@@ -50,6 +52,8 @@ const UserSchema = new mongoose.Schema({
     equippedSlot: { type: String, default: null },
     gridIndex: { type: Number, default: null }
   }],
+
+  completedTasks: { type: [mongoose.Schema.Types.ObjectId], ref: 'TaskPool', default: [] },
 
   // --- CHARACTER CUSTOMIZATION (PAPERDOLL SYSTEM) ---
   characterIndex: { type: Number, default: 1 }, // 1-6 representing Gender/Class

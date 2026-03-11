@@ -48,14 +48,14 @@ export const Auth = ({ onLogin }: { onLogin: () => void }) => {
     e.preventDefault();
     try {
       if (isLogin) {
-        const res = await axios.post('http://localhost:5000/api/auth/login', { 
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, { 
           username: formData.username, password: formData.password 
         });
         localStorage.setItem('token', res.data.token);
         onLogin();
       } else {
         // Sending full formData including the selected role
-        await axios.post('http://localhost:5000/api/auth/register', { 
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, { 
           ...formData, 
           characterIndex: charIndex,
           skinVariant, 

@@ -13,14 +13,19 @@ app.use(cors());
 app.use(express.json());
 
 // --- ROUTES ---
-// We define each prefix exactly ONCE.
+// We import and use them directly to avoid "Variable Not Defined" errors.
 app.use('/api/auth', require('./routes/auth'));
+
+// This handles your Solo Area, Dailies, and the Problem Library for the Instructor
 app.use('/api/tasks', require('./routes/tasks'));
+
+// Legacy support: In case your frontend still calls /api/problems, we point it to the same file
 app.use('/api/problems', require('./routes/tasks')); 
+
 app.use('/api/shop', require('./routes/shop'));
-app.use('/api/guilds', require('./routes/guilds'));   // This handles /api/guilds
+app.use('/api/guilds', require('./routes/guilds'));
 app.use('/api/achievements', require('./routes/achievements'));
-app.use('/api/messages', require('./routes/messages')); // This handles /api/messages
+app.use('/api/messages', require('./routes/messages'));
 
 // --- DATABASE CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)

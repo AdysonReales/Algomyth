@@ -71,16 +71,16 @@ export const AccountSettings = ({ userData, onUpdate }: { userData: any, onUpdat
 
   setLoading(true);
   try {
-    const response = await axios.put('http://localhost:5000/api/auth/update-profile', { 
-      username, 
-      email,
-      oldPassword: oldPass, // Must match backend key
-      newPassword: newPass || undefined,
-      skinVariant, 
-      armorVariant, 
-      characterIndex: charIndex,
-      appearanceChanged 
-    });
+    const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/auth/update-profile`, { 
+    username, 
+    email,
+    oldPassword: oldPass, 
+    newPassword: newPass || undefined,
+    skinVariant, 
+    armorVariant, 
+    characterIndex: charIndex,
+    appearanceChanged 
+});
 
     console.log("✅ Server Response:", response.data);
     playSFX('sfx_success.ogg');

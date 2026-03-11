@@ -6,22 +6,18 @@ const { protect } = require('../middleware/authMiddleware');
 // Helper to generate a random 6-character code
 const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
-// @route   POST /api/guilds/create
-// @desc    Instructor creates a Guild
 router.post('/create', protect, async (req, res) => {
     try {
         const { name, description } = req.body;
         const newGuild = new Guild({
-            name,
-            description,
+            name, description,
             joinCode: generateCode(),
             instructor: req.user.id,
-            members: [req.user.id] // Auto-adds the creator as the first member
+            members: [req.user.id] // Auto-adds the creator
         });
         await newGuild.save();
         res.status(201).json(newGuild);
     } catch (err) {
-        console.error("Create Guild Error:", err.message);
         res.status(500).json({ message: "Error creating guild" });
     }
 });
@@ -35,13 +31,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// @route   POST /api/guilds/join
-// @desc    Student joins a Guild via Code
 router.post('/join', protect, async (req, res) => {
     try {
         const { code } = req.body;
         const guild = await Guild.findOne({ joinCode: code.toUpperCase() });
-
         if (!guild) return res.status(404).json({ message: "Invalid Class Code" });
         if (guild.members.includes(req.user.id)) return res.status(400).json({ message: "You are already in this guild" });
 
@@ -49,44 +42,116 @@ router.post('/join', protect, async (req, res) => {
         await guild.save();
         res.json({ message: `Successfully joined ${guild.name}!` });
     } catch (err) {
-        console.error("Join Guild Error:", err.message);
         res.status(500).json({ message: "Error joining guild" });
     }
 });
 
-// @route   GET /api/guilds/my-guilds
-// @desc    Get all guilds the logged-in user belongs to
-router.get('/my-guilds', protect, async (req, res) => {
-    try {
-        // Find any guild where the user's ID exists in the "members" array
-        const userGuilds = await Guild.find({ members: req.user.id });
-        res.json(userGuilds);
-    } catch (err) {
-        console.error("Fetch Guilds Error:", err.message);
-        res.status(500).json({ message: "Server error fetching guilds" });
-    }
-});
-
-//Guild Hall Path (Instructor Only)
 router.put('/:guildId/path', protect, async (req, res) => {
   try {
     const guild = await Guild.findById(req.params.guildId);
-
     if (!guild) return res.status(404).json({ message: "Guild not found" });
 
-    // Verify the person saving is the actual instructor
+    // Ensure the requester is the instructor or an admin
     if (guild.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ message: "Only the Guild Master can edit the Hall" });
+      return res.status(403).json({ message: "Unauthorized: Only the Guild Master can edit the Hall" });
     }
 
-    // Update the problems array
-    guild.problems = req.body.problems; 
+    // FIX: Normalize the problems array before saving to ensure clean data
+    const normalizedProblems = req.body.problems.map(p => ({
+      problemType: p.problemType,
+      displayTitle: p.displayTitle,
+      nodeTitle: p.nodeTitle,
+      source: p.source,
+      // If it's a solo task, store the ID. If it's custom, this will be the unique string ID.
+      problemId: p.problemId,
+      customProblem: p.problemType === 'custom' ? p.customProblem : null,
+      order: p.order
+    }));
+
+    guild.problems = normalizedProblems;
     await guild.save();
 
-    res.json({ message: "Guild Hall Path updated successfully!", problems: guild.problems });
+    res.json({ 
+      success: true,
+      message: "Guild Hall Path updated successfully!", 
+      problems: guild.problems 
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Guild Save Error:", err);
     res.status(500).json({ message: "Server error updating hall" });
+  }
+});
+router.post('/:guildId/remove-student', protect, async (req, res) => {
+  try {
+    const guild = await Guild.findById(req.params.guildId);
+    if (guild.instructor.toString() !== req.user.id) return res.status(403).json({ message: "Only the Grandmaster can exile members." });
+    
+    const { studentId } = req.body;
+    guild.members = guild.members.filter(id => id.toString() !== studentId);
+    await guild.save();
+    res.json({ message: "Student has been removed from the roster.", members: guild.members });
+  } catch (err) {
+    res.status(500).json({ message: "Exile failed." });
+  }
+});
+
+// 🛠️ THE MISSING ROUTE: LEAVE GUILD
+router.post('/:guildId/leave', protect, async (req, res) => {
+  try {
+    const guild = await Guild.findById(req.params.guildId);
+    if (!guild) return res.status(404).json({ message: "Guild not found" });
+
+    guild.members = guild.members.filter(id => id.toString() !== req.user.id);
+    await guild.save();
+    res.json({ message: "You have departed from the guild roster." });
+  } catch (err) {
+    res.status(500).json({ message: "Departure failed." });
+  }
+});
+
+// 🛠️ NEW ROUTE: ABOLISH CLASS
+router.delete('/:guildId', protect, async (req, res) => {
+  try {
+    const guild = await Guild.findById(req.params.guildId);
+    if (!guild) return res.status(404).json({ message: "Guild not found" });
+    
+    // Only the instructor can delete the class
+    if (guild.instructor.toString() !== req.user.id) return res.status(403).json({ message: "Unauthorized." });
+
+    await Guild.findByIdAndDelete(req.params.guildId);
+    res.json({ message: "Class has been abolished." });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to abolish class." });
+  }
+});
+
+router.post('/:guildId/announcement', protect, async (req, res) => {
+  try {
+    const { content } = req.body;
+    const guild = await Guild.findById(req.params.guildId);
+    if (!guild) return res.status(404).json({ message: "Guild not found" });
+    if (guild.instructor.toString() !== req.user.id) return res.status(403).json({ message: "Unauthorized." });
+
+    // Safely add announcement
+    if (!guild.announcements) guild.announcements = [];
+    guild.announcements.unshift({ content, author: req.user.username || 'Grandmaster', timestamp: new Date() });
+    await guild.save();
+    res.json({ success: true, announcement: guild.announcements[0] });
+  } catch (err) {
+    res.status(500).json({ message: "Server error during announcement." });
+  }
+});
+
+router.get('/:guildId/progress-report', protect, async (req, res) => {
+  try {
+    const guild = await Guild.findById(req.params.guildId).populate({
+      path: 'members',
+      select: 'username stats progress completedTasks' 
+    });
+    if (guild.instructor.toString() !== req.user.id) return res.status(403).json({ message: "Access Denied." });
+    res.json(guild.members);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch progress report." });
   }
 });
 
