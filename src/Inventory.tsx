@@ -73,9 +73,10 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
 
 // --- 3. Equipment Slot ---
 const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
+  // Added optional chaining ?. to prevent the "reading properties of undefined" crash
   const itemPath = equippedItem?.item?.category?.toLowerCase() === 'body' 
-    ? `/assets/body/${equippedItem.item.image}` 
-    : `/assets/items/${equippedItem.item.image}`;
+    ? `/assets/body/${equippedItem?.item?.image}` 
+    : `/assets/items/${equippedItem?.item?.image}`;
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -113,23 +114,29 @@ export const Inventory = ({ inventory = [], onEquipItem, onUnequipItem, onMoveIt
   const equippedBody = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Body');
   const equippedAccessory = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Accessory');
 
-  const renderFixedGrid = () => {
-    const filteredBag = safeInventory.filter(inv => {
-        if (!inv || inv.isEquipped) return false;
-        const cat = inv.item?.category;
-        if (activeTab === 'equipment') return cat === 'Head' || cat === 'Body';
-        if (activeTab === 'pets') return cat === 'Pet' || cat === 'Accessory';
-        if (activeTab === 'items') return cat === 'Consumable' || cat === 'Quest' || cat === 'Scroll';
-        return true;
-    });
-    const grid = [];
-    for (let i = 0; i < 20; i++) {
-      const itemInSlot = filteredBag.find(inv => inv.gridIndex === i);
-      if (itemInSlot) grid.push(<GridItem key={itemInSlot._id} invSlot={itemInSlot} onSellItem={onSellItem} />);
-      else grid.push(<EmptyGridSlot key={`empty-${i}`} index={i} onUnequipToSlot={onUnequipItem} onMoveItem={onMoveItem} />);
+const renderFixedGrid = () => {
+  const filteredBag = safeInventory.filter(inv => {
+    // Check if inv AND inv.item exist before checking category
+    if (!inv || !inv.item || inv.isEquipped) return false;
+    const cat = inv.item.category;
+    if (activeTab === 'equipment') return cat === 'Head' || cat === 'Body';
+    if (activeTab === 'pets') return cat === 'Pet' || cat === 'Accessory';
+    if (activeTab === 'items') return cat === 'Consumable' || cat === 'Quest' || cat === 'Scroll';
+    return true;
+  });
+
+  const grid = [];
+  for (let i = 0; i < 20; i++) {
+    const itemInSlot = filteredBag.find(inv => inv.gridIndex === i);
+    // Extra safety: only render GridItem if itemInSlot and itemInSlot.item exist
+    if (itemInSlot && itemInSlot.item) {
+      grid.push(<GridItem key={itemInSlot._id || i} invSlot={itemInSlot} onSellItem={onSellItem} />);
+    } else {
+      grid.push(<EmptyGridSlot key={`empty-${i}`} index={i} onUnequipToSlot={onUnequipItem} onMoveItem={onMoveItem} />);
     }
-    return grid;
-  };
+  }
+  return grid;
+};
 
   return (
     <div className="h-full flex flex-col pt-4">
