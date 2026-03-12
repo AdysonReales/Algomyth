@@ -136,11 +136,20 @@ export const Shop = ({ onBuyItem, userInventory = [], userData }: { onBuyItem: (
 
   const userClass = getClassFromIndex(userData?.characterIndex || 1);
 
-  const filteredItems = shopItems.filter(item => {
+const filteredItems = shopItems.filter(item => {
     const cat = item.category?.toLowerCase();
+    const imageName = item.image?.toLowerCase() || "";
+
+    // 1. HIDDEN ITEMS: Exclude anything that is Rogue or V6
+    if (imageName.includes('rogue') || imageName.includes('v6')) {
+      return false;
+    }
+
+    // 2. TAB FILTERING: Normal logic
     if (activeTab === 'market') return cat === 'head' || cat === 'body' || cat === 'consumable';
     if (activeTab === 'customize') return cat === 'pet' || cat === 'accessory' || cat === 'customization';
     if (activeTab === 'quest') return cat === 'quest';
+    
     return false;
   });
 
