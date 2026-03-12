@@ -185,6 +185,39 @@ const AvatarSection = ({ userData, userGold, inventory = [], onRemoveBadge }: an
   const bodyGear = inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Body')?.item;
   const accessoryGear = inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Accessory')?.item;
 
+  // 🛠️ SMART PATH HELPER: Routes items to the correct folders based on your file hierarchy
+  const getPanelPath = (item: any) => {
+    if (!item || !item.image) return "";
+    const img = item.image;
+    const imgLower = img.toLowerCase();
+    const name = item.name?.toLowerCase() || "";
+    const cat = item.category?.toLowerCase() || "";
+
+    // 1. Force items folder for class gear (knight, mage, rogue)
+    if (imgLower.includes('knight') || imgLower.includes('mage') || imgLower.includes('rogue')) {
+        return `/assets/items/${img}`;
+    }
+
+    // 2. Force body folder for Wings and Shift items
+    if (cat === 'body' || name.includes('wings') || name.includes('shift')) {
+        return `/assets/body/${img}`;
+    }
+
+    // 3. Accessory sub-folder logic
+    if (cat === 'accessory' || cat === 'pet') {
+        if (name.includes('flyte'))     return `/assets/accessory/Flyte/${img}`;
+        if (name.includes('gryfon'))    return `/assets/accessory/Gryfon/${img}`;
+        if (name.includes('igalyph'))   return `/assets/accessory/Igalyph/${img}`;
+        if (name.includes('laguna'))    return `/assets/accessory/Laguna/${img}`;
+        if (name.includes('nimblithe')) return `/assets/accessory/Nimblithe/${img}`;
+        if (name.includes('wolfren'))   return `/assets/accessory/Wolfren/${img}`;
+        return `/assets/accessory/${img}`;
+    }
+
+    // Default Fallback
+    return `/assets/items/${img}`;
+  };
+
   return (
     <div className="p-8 bg-[#a67c52] border-b-8 border-[#5d3a1a] relative shadow-inner z-10">
       <div className="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(90deg,transparent,transparent_40px,#3e2723_40px,#3e2723_44px)] pointer-events-none"></div>
@@ -193,20 +226,49 @@ const AvatarSection = ({ userData, userGold, inventory = [], onRemoveBadge }: an
         <div className="flex gap-8 items-start bg-[#d4a373] p-6 border-4 border-[#5d3a1a] shadow-xl min-w-[450px]">
           <div className="flex flex-col gap-4 items-center">
              <div className="w-48 h-72 bg-[#f4e4bc] border-4 border-[#5d3a1a] flex flex-col items-center justify-center overflow-hidden shadow-inner relative">
-              {bodyGear && <div className="absolute inset-0 flex items-center justify-center z-0"><img src={`/assets/items/${bodyGear.image}`} className="w-full h-full object-contain scale-150 -translate-y-12" style={{ imageRendering: 'pixelated' }} alt="Body Gear" /></div>}
+              {/* BODY GEAR LAYER (Z-0) */}
+              {bodyGear && (
+                <div className="absolute inset-0 flex items-center justify-center z-0">
+                  <img 
+                    src={getPanelPath(bodyGear)} 
+                    className="w-full h-full object-contain scale-150 -translate-y-12" 
+                    style={{ imageRendering: 'pixelated' }} 
+                    alt="Body Gear" 
+                  />
+                </div>
+              )}
+
+                {/* CHARACTER SKIN LAYER (Z-10) */}
                 <div className="absolute inset-0 w-full h-full p-2 flex items-end justify-center z-10">
                   <img src={getAssetUrl(skinVariant, skinVariant, charIndex)} className="absolute w-full h-[90%] object-contain" style={{ imageRendering: 'pixelated' }} />
                   {armorVariant !== 'default' && <img src={getAssetUrl(armorVariant, armorVariant, charIndex)} className="absolute w-full h-[90%] object-contain" style={{ imageRendering: 'pixelated' }} />}
                 </div>
-                {headGear && <div className="absolute top-8 w-16 h-16 z-20 flex items-center justify-center animate-bounce"><img src={`/assets/items/${headGear.image}`} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Head Gear" /></div>}
-                {accessoryGear && <div className="absolute bottom-6 right-2 w-20 h-20 z-30 drop-shadow-lg"><img src={`/assets/items/${accessoryGear.image}`} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Accessory Gear" /></div>}
+
+                {/* HEAD GEAR LAYER (Z-20) */}
+                {headGear && (
+                  <div className="absolute top-8 w-16 h-16 z-20 flex items-center justify-center animate-bounce">
+                    <img src={getPanelPath(headGear)} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Head Gear" />
+                  </div>
+                )}
+
+                {/* ACCESSORY/PET LAYER (Z-30) */}
+                {accessoryGear && (
+                  <div className="absolute bottom-6 right-2 w-20 h-20 z-30 drop-shadow-lg">
+                    <img src={getPanelPath(accessoryGear)} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Accessory Gear" />
+                  </div>
+                )}
+                
                 <span className="absolute bottom-2 text-[10px] font-bold text-[#5d3a1a] opacity-30 uppercase z-50">Algomyth Identity</span>
               </div>
 
              <div className="flex gap-3 w-full justify-between">
                 {[headGear, bodyGear, accessoryGear].map((gear, idx) => (
                   <div key={idx} className="w-14 h-14 bg-[#b88a5f] border-4 border-[#5d3a1a] flex items-center justify-center shadow-inner">
-                    {gear ? ( gear.image.includes('.') ? <img src={`/assets/items/${gear.image}`} className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }} alt="Gear Item" /> : <span className="text-2xl">{gear.image}</span>) : <div className="w-8 h-8 bg-[#5d3a1a] opacity-10"></div>}
+                    {gear ? ( 
+                      <img src={getPanelPath(gear)} className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }} alt="Gear Item" />
+                    ) : (
+                      <div className="w-8 h-8 bg-[#5d3a1a] opacity-10"></div>
+                    )}
                   </div>
                 ))}
              </div>
@@ -477,39 +539,49 @@ const App = () => {
 
       <audio id="global-bgm" loop />
 
-     {searchResult && (
+   {searchResult && (
   <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
     <div className="bg-[#fdf6e3] border-8 border-[#5d3a1a] p-8 w-full max-w-3xl relative shadow-2xl overflow-y-auto max-h-[90vh]">
       <button onClick={() => setSearchResult(null)} className="absolute top-2 right-4 text-4xl font-bold text-[#5d3a1a] hover:text-red-600 transition-colors z-[110]">×</button>
       
       <div className="flex flex-col md:flex-row gap-10 items-start">
-        {/* AVATAR PREVIEW */}
         <div className="flex flex-col gap-6 items-center bg-[#d4a373] p-6 border-4 border-[#5d3a1a] shadow-xl">
           <div className="flex flex-col items-center justify-center relative min-w-48 min-h-72 bg-[#f4e4bc] border-4 border-[#5d3a1a] shadow-inner overflow-hidden">
             
-            {/* 1. BODY GEAR - Added /assets/body/ logic */}
+            {/* 1. SEARCH MODAL BODY GEAR */}
             {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Body') && (
               <img 
-                src={`/assets/body/${searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Body').item?.image}`} 
+                src={(() => {
+                  const gear = searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Body').item;
+                  const img = gear.image.toLowerCase();
+                  if (img.includes('knight') || img.includes('mage') || img.includes('rogue')) return `/assets/items/${gear.image}`;
+                  return `/assets/body/${gear.image}`;
+                })()} 
                 className="absolute inset-0 w-full h-full object-contain z-0 scale-150 -translate-y-4 pixelated" 
               />
             )}
             
-            {/* 2. CHARACTER SKIN - Fixed Mismatch (Using searchResult.skinVariant) */}
-            <img 
-              src={getAssetUrl(searchResult.skinVariant || 'default', searchResult.skinVariant || 'default', searchResult.characterIndex || 1)} 
-              className="w-auto h-72 object-contain z-10 pixelated" 
-            />
+            <img src={getAssetUrl(searchResult.skinVariant || 'default', searchResult.skinVariant || 'default', searchResult.characterIndex || 1)} className="w-auto h-72 object-contain z-10 pixelated" />
             
-            {/* 3. ACCESSORY GEAR - Added /assets/items/ path */}
+            {/* 2. SEARCH MODAL ACCESSORY GEAR */}
             {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Accessory') && (
               <img 
-                src={`/assets/items/${searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Accessory').item?.image}`} 
+                src={(() => {
+                  const gear = searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Accessory').item;
+                  const name = gear.name?.toLowerCase() || "";
+                  if (name.includes('flyte')) return `/assets/accessory/Flyte/${gear.image}`;
+                  if (name.includes('gryfon')) return `/assets/accessory/Gryfon/${gear.image}`;
+                  if (name.includes('igalyph')) return `/assets/accessory/Igalyph/${gear.image}`;
+                  if (name.includes('laguna')) return `/assets/accessory/Laguna/${gear.image}`;
+                  if (name.includes('nimblithe')) return `/assets/accessory/Nimblithe/${gear.image}`;
+                  if (name.includes('wolfren')) return `/assets/accessory/Wolfren/${gear.image}`;
+                  return `/assets/items/${gear.image}`;
+                })()} 
                 className="absolute bottom-4 right-2 w-20 h-20 object-contain z-30 pixelated" 
               />
             )}
 
-            {/* 4. HEAD GEAR - Added /assets/items/ path */}
+            {/* 3. SEARCH MODAL HEAD GEAR */}
             {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Head') && (
               <img 
                 src={`/assets/items/${searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Head').item?.image}`} 
