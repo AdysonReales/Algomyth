@@ -36,7 +36,8 @@ const achievementEmojis: Record<string, string> = {
 };
 
 const getAssetUrl = (folder: string, prefix: string, index: number) => {
-  return new URL(`assets/${folder}/${prefix}_${index}.png`, import.meta.url).href;
+  // Removing 'new URL' and starting with '/' fixes the Vite build error
+  return `/assets/${folder}/${prefix}_${index}.png`;
 };
 
 
