@@ -204,7 +204,7 @@ mongoose.connect(process.env.MONGO_URI)
     price: 1200 + (i * 1200), // V1: 1200, V5: 6000
     classReq: 'mage',
     variant: `mage${v}`,
-    image: `/src/assets/items/mage${v}.png`,
+    image: `assets/items/mage${v}.png`,
     description: `High-resonance silk woven for Tier ${i + 1} spellcasting.`
   })),
 
@@ -215,18 +215,18 @@ mongoose.connect(process.env.MONGO_URI)
     price: 1100 + (i * 1100), // V1: 1100, V5: 5500
     classReq: 'rogue',
     variant: `rogue${v}`,
-    image: `/src/assets/items/rogue${v}.png`,
+    image: `assets/items/rogue${v}.png`,
     description: `Shadow-stitched hide providing Tier ${i + 1} agility.`
   }))
 ];
     
     const itemData = [
       // Accessories (Flyte, Gryfon, etc)
-      ...['Black', 'Blue', 'Cool', 'Green', 'Pink', 'Rainbow', 'Red', 'Spicy', 'Yellow'].map(v => ({ name: `Flyte (${v})`, category: 'Accessory', price: (v === 'Rainbow' || v === 'Spicy') ? 7500 : 4000, folder: 'Flyte', variant: v, image: `/src/assets/accessory/Flyte/${v}.png` })),
-      ...['Black', 'Brown', 'Gray', 'Green', 'Rainbow', 'Red', 'Spicy', 'White'].map(v => ({ name: `Gryfon (${v})`, category: 'Accessory', price: (v === 'Rainbow' || v === 'Spicy') ? 7500 : 4000, folder: 'Gryfon', variant: v, image: `/src/assets/accessory/Gryfon/${v}.png` })),
-      ...['Black', 'Cool', 'Neutral', 'Rainbow', 'Spicy', 'White'].map(v => ({ name: `Igalyph (${v})`, category: 'Accessory', price: (v === 'Rainbow' || v === 'Spicy') ? 7500 : 4000, folder: 'Igalyph', variant: v, image: `/src/assets/accessory/Igalyph/${v}.png` })),
+      ...['Black', 'Blue', 'Cool', 'Green', 'Pink', 'Rainbow', 'Red', 'Spicy', 'Yellow'].map(v => ({ name: `Flyte (${v})`, category: 'Accessory', price: (v === 'Rainbow' || v === 'Spicy') ? 7500 : 4000, folder: 'Flyte', variant: v, image: `assets/accessory/Flyte/${v}.png` })),
+      ...['Black', 'Brown', 'Gray', 'Green', 'Rainbow', 'Red', 'Spicy', 'White'].map(v => ({ name: `Gryfon (${v})`, category: 'Accessory', price: (v === 'Rainbow' || v === 'Spicy') ? 7500 : 4000, folder: 'Gryfon', variant: v, image: `assets/accessory/Gryfon/${v}.png` })),
+      ...['Black', 'Cool', 'Neutral', 'Rainbow', 'Spicy', 'White'].map(v => ({ name: `Igalyph (${v})`, category: 'Accessory', price: (v === 'Rainbow' || v === 'Spicy') ? 7500 : 4000, folder: 'Igalyph', variant: v, image: `assets/accessory/Igalyph/${v}.png` })),
       // Wings
-      ...['Aqua', 'Black', 'BPshift', 'BGshift', 'CBlue', 'Dgreen', 'DWshift', 'Gshift', 'Purple', 'SBlue', 'SWhite', 'Wshift'].map(v => ({ name: `${v.replace('shift', ' Shift')} Wings`, category: 'Body', price: v.includes('shift') ? 4500 : 3000, variant: v, image: `/src/assets/body/${v}.png` })),
+      ...['Aqua', 'Black', 'BPshift', 'BGshift', 'CBlue', 'Dgreen', 'DWshift', 'Gshift', 'Purple', 'SBlue', 'SWhite', 'Wshift'].map(v => ({ name: `${v.replace('shift', ' Shift')} Wings`, category: 'Body', price: v.includes('shift') ? 4500 : 3000, variant: v, image: `assets/body/${v}.png` })),
       // Head Armor
       ...['knight', 'mage', 'rogue'].flatMap(cls => 
     ['V1', 'V2', 'V3', 'V4', 'V5'].map((v, i) => ({
@@ -241,16 +241,16 @@ mongoose.connect(process.env.MONGO_URI)
   ),
       ...specializedArmor,
       // QUEST SCROLLS (Linked to Task IDs)
-      { name: "Scroll of Multiplication", description: "Unlocks While Loop bounty.", price: 150, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[0] },
-      { name: "Scroll of Arrays", description: "Unlocks Array Sum bounty.", price: 150, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[1] },
-      { name: "Scroll of Formatting", description: "Unlocks Tabbed Output bounty.", price: 100, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[2] },
-      { name: "Scroll of the Calendar", description: "Unlocks Day Switcher bounty.", price: 250, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[3] },
-      { name: "Scroll of Geometry", description: "Unlocks Cylinder Volume bounty.", price: 300, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[4] },
-      { name: "Scroll of Commerce", description: "Unlocks Currency Converter bounty.", price: 275, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[5] },
-      { name: "Scroll of Roots", description: "Unlocks Square Root bounty.", price: 175, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[6] },
-      { name: "Scroll of Health", description: "Unlocks BMI Calculator bounty.", price: 350, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[7] },
-      { name: "Scroll of Evens", description: "Unlocks Even Digits Sum bounty.", price: 325, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[8] },
-      { name: "Scroll of Time", description: "Unlocks Leap Years bounty.", price: 400, category: "Quest", image: "/src/assets/items/scroll.png", unlocksTaskId: shopIds[9] }
+      { name: "Scroll of Multiplication", description: "Unlocks While Loop bounty.", price: 150, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[0] },
+      { name: "Scroll of Arrays", description: "Unlocks Array Sum bounty.", price: 150, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[1] },
+      { name: "Scroll of Formatting", description: "Unlocks Tabbed Output bounty.", price: 100, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[2] },
+      { name: "Scroll of the Calendar", description: "Unlocks Day Switcher bounty.", price: 250, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[3] },
+      { name: "Scroll of Geometry", description: "Unlocks Cylinder Volume bounty.", price: 300, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[4] },
+      { name: "Scroll of Commerce", description: "Unlocks Currency Converter bounty.", price: 275, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[5] },
+      { name: "Scroll of Roots", description: "Unlocks Square Root bounty.", price: 175, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[6] },
+      { name: "Scroll of Health", description: "Unlocks BMI Calculator bounty.", price: 350, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[7] },
+      { name: "Scroll of Evens", description: "Unlocks Even Digits Sum bounty.", price: 325, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[8] },
+      { name: "Scroll of Time", description: "Unlocks Leap Years bounty.", price: 400, category: "Quest", image: "assets/items/scroll.png", unlocksTaskId: shopIds[9] }
     ];
 
     await Item.insertMany(itemData);
