@@ -52,14 +52,20 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const itemPath = item?.category?.toLowerCase() === 'body' 
-    ? `/assets/body/${item?.image}` 
-    : `/assets/items/${item?.image}`;
+  // IMPROVED LOGIC: Check category OR if the name includes "wings"
+  const isWing = item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings');
+  const itemPath = isWing ? `/assets/body/${item?.image}` : `/assets/items/${item?.image}`;
 
   return (
     <div draggable onDragStart={handleDragStart} className="flex flex-col items-center gap-1 group w-24 cursor-grab active:cursor-grabbing relative z-10">
       <div className={`w-20 h-20 bg-[#f4d0a3] border-4 ${getSlotColor(item?.category)} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform relative`}>
-          <img src={itemPath} className="w-12 h-12 object-contain" style={{ imageRendering: 'pixelated' }} alt={item?.name} />
+          <img 
+            src={itemPath} 
+            className="w-12 h-12 object-contain" 
+            style={{ imageRendering: 'pixelated' }} 
+            alt={item?.name} 
+            onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/64?text=📦')}
+          />
           <button onClick={(e) => { e.stopPropagation(); onSellItem(invSlot._id); }} className="absolute -top-2 -right-2 bg-red-600 border-2 border-black p-1 hidden group-hover:block hover:bg-red-700 shadow-md">
             <Trash2 size={12} color="white" />
           </button>
@@ -73,10 +79,11 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
 
 // --- 3. Equipment Slot ---
 const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
-  // Added optional chaining ?. to prevent the "reading properties of undefined" crash
-  const itemPath = equippedItem?.item?.category?.toLowerCase() === 'body' 
-    ? `/assets/body/${equippedItem?.item?.image}` 
-    : `/assets/items/${equippedItem?.item?.image}`;
+  const item = equippedItem?.item;
+  
+  // Same improved logic for the equipped slot
+  const isWing = item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings');
+  const itemPath = isWing ? `/assets/body/${item?.image}` : `/assets/items/${item?.image}`;
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -92,14 +99,14 @@ const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
         className={`w-24 h-24 border-4 flex items-center justify-center shadow-inner relative transition-all 
           ${equippedItem ? `bg-[#fdf6e3] ${getSlotColor(slotId)} cursor-grab scale-105 shadow-lg` : `bg-[#d4a373] ${getSlotColor(slotId)} opacity-40`}`}
       >
-        {equippedItem?.item ? (
-          <img src={itemPath} className="w-16 h-16 object-contain" style={{ imageRendering: 'pixelated' }} alt={equippedItem.item.name} />
+        {item ? (
+          <img src={itemPath} className="w-16 h-16 object-contain" style={{ imageRendering: 'pixelated' }} alt={item.name} />
         ) : (
           <div className="text-[#5d3a1a] opacity-30 text-xl font-bold uppercase" style={{ fontFamily: "'VT323', monospace" }}>{label}</div>
         )}
       </div>
       <span className="font-bold text-[#5d3a1a] text-xl uppercase tracking-tighter text-center leading-none" style={{ fontFamily: "'VT323', monospace" }}>
-        {equippedItem?.item ? equippedItem.item.name : label}
+        {item ? item.name : label}
       </span>
     </div>
   );
