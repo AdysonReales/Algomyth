@@ -69,6 +69,8 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
     }
   };
 
+  
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = newMessage.trim();
@@ -124,6 +126,19 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
         alert("Failed to delete messages");
       }
     }
+  };
+
+  const getUsernameColor = (charIndex: any) => {
+    const idx = Number(charIndex || 1);
+    const mapping: Record<number, string> = {
+      1: 'text-amber-800',   // Knight (Brown)
+      2: 'text-blue-700',    // Mage (Blue)
+      3: 'text-emerald-700', // Rogue (Green)
+      4: 'text-amber-800',   // Knight
+      5: 'text-blue-700',    // Mage
+      6: 'text-emerald-700', // Rogue
+    };
+    return mapping[idx] || 'text-[#5d3a1a]';
   };
 
   return (
@@ -214,18 +229,26 @@ export const MessagesPanel = ({ userData, onSearch, chatTarget, clearChatTarget 
             </div>
             <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
               {chatHistory.map((m, i) => {
-                const isMe = m.sender?._id === userData?._id || m.sender === userData?._id;
-                return (
-                  <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] p-3 border-4 border-[#5d3a1a] ${isMe ? 'bg-[#76c442] text-white shadow-md' : 'bg-white text-[#3e2723] shadow-sm'}`}>
-                      <div className="text-xl leading-tight">{m.content}</div>
-                      <div className={`text-[10px] mt-1 opacity-50 ${isMe ? 'text-right' : 'text-left'}`}>
-                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+  const isMe = m.sender?._id === userData?._id || m.sender === userData?._id;
+  // Determine whose data to use for the name and color
+  const senderData = isMe ? userData : selectedUser;
+
+  return (
+    <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+      {/* CLASS-COLORED USERNAME */}
+      <span className={`text-sm font-black uppercase mb-1 ${getUsernameColor(senderData?.characterIndex)}`}>
+        {senderData?.username}
+      </span>
+
+      <div className={`max-w-[80%] p-3 border-4 border-[#5d3a1a] ${isMe ? 'bg-[#76c442] text-white shadow-md' : 'bg-white text-[#3e2723] shadow-sm'}`}>
+        <div className="text-xl leading-tight">{m.content}</div>
+        <div className={`text-[10px] mt-1 opacity-50 ${isMe ? 'text-right' : 'text-left'}`}>
+          {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      </div>
+    </div>
+  );
+})}
               <div ref={chatEndRef} />
             </div>
             <form onSubmit={handleSendMessage} className="p-4 border-t-4 border-[#5d3a1a] bg-[#f4e4bc] flex gap-3">

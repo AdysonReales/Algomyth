@@ -101,10 +101,15 @@ const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
           ${equippedItem ? `bg-[#fdf6e3] ${getSlotColor(slotId)} cursor-grab scale-105 shadow-lg` : `bg-[#d4a373] ${getSlotColor(slotId)} opacity-40`}`}
       >
         {equippedItem?.item ? (
-          <img src={`/assets/items/${equippedItem.item.image}`} className="w-16 h-16 object-contain" style={{ imageRendering: 'pixelated' }} alt={equippedItem.item.name} />
-        ) : (
-          <div className="text-[#5d3a1a] opacity-30 text-xl font-bold uppercase" style={{ fontFamily: "'VT323', monospace" }}>{label}</div>
-        )}
+  <img 
+    src={`/assets/items/${equippedItem.item.image}`} // Ensure the leading / is here
+    className="w-16 h-16 object-contain" 
+    style={{ imageRendering: 'pixelated' }} 
+    alt={equippedItem.item.name} 
+  />
+) : (
+  <div className="text-[#5d3a1a] opacity-30 text-xl font-bold uppercase" style={{ fontFamily: "'VT323', monospace" }}>{label}</div>
+)}
       </div>
       
       {/* FIX: Display the Item Name if equipped, otherwise show the Category Label */}
