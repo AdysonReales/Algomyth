@@ -22,6 +22,33 @@ const getSlotColor = (category: string | undefined) => {
     return 'border-[#8b5a2b]'; 
 };
 
+// --- SMART PATH RESOLVER ---
+// This looks at your exact folder structure from the screenshot
+const getImagePath = (item: any) => {
+    if (!item || !item.image) return '';
+    
+    // If DB already has the full path, use it
+    if (item.image.includes('/assets/')) {
+        return item.image.startsWith('/') ? item.image : `/${item.image}`;
+    }
+
+    const cat = item.category?.toLowerCase() || '';
+    const name = item.name?.toLowerCase() || '';
+
+    // Route to /assets/body/
+    if (cat === 'body' || name.includes('wings') || name.includes('shift') || name.includes('robe')) {
+        return `/assets/body/${item.image}`;
+    }
+    
+    // Route to /assets/accessory/
+    if (cat === 'accessory' || cat === 'pet') {
+        return `/assets/accessory/${item.image}`;
+    }
+
+    // Default route to /assets/items/
+    return `/assets/items/${item.image}`;
+};
+
 // --- 1. Empty Slot ---
 const EmptyGridSlot = ({ index, onUnequipToSlot, onMoveItem }: any) => {
   const handleDrop = (e: React.DragEvent) => {
@@ -57,10 +84,6 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
     e.dataTransfer.effectAllowed = "move";
   };
 
-  // PATH FIX: Wings go to body folder, everything else to items
-  const isWing = item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings');
-  const finalSrc = isWing ? `/assets/body/${item?.image}` : `/assets/items/${item?.image}`;
-
   return (
     <div 
       draggable 
@@ -68,7 +91,13 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
       className="flex flex-col items-center gap-1 group w-24 cursor-grab active:cursor-grabbing relative z-10"
     >
       <div className={`w-20 h-20 bg-[#f4d0a3] border-4 ${getSlotColor(item?.category)} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform relative`}>
-          <img src={finalSrc} className="w-12 h-12 object-contain" style={{ imageRendering: 'pixelated' }} alt={item?.name} />
+          <img 
+            src={getImagePath(item)} 
+            className="w-12 h-12 object-contain" 
+            style={{ imageRendering: 'pixelated' }} 
+            alt={item?.name || "item"} 
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
           
           <button 
             onClick={(e) => { e.stopPropagation(); onSellItem(invSlot._id); }}
@@ -89,10 +118,6 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
 const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
   const item = equippedItem?.item;
 
-  // PATH FIX: Same folder logic
-  const isWing = item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings');
-  const finalSrc = isWing ? `/assets/body/${item?.image}` : `/assets/items/${item?.image}`;
-
   return (
     <div className="flex flex-col items-center gap-2">
       <div 
@@ -110,13 +135,19 @@ const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
           ${equippedItem ? `bg-[#fdf6e3] ${getSlotColor(slotId)} cursor-grab scale-105 shadow-lg` : `bg-[#d4a373] ${getSlotColor(slotId)} opacity-40`}`}
       >
         {item ? (
-          <img src={finalSrc} className="w-16 h-16 object-contain" style={{ imageRendering: 'pixelated' }} />
+          <img 
+            src={getImagePath(item)} 
+            className="w-16 h-16 object-contain" 
+            style={{ imageRendering: 'pixelated' }} 
+            alt={item.name}
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
         ) : (
           <div className="text-[#5d3a1a] opacity-30 text-xl font-bold uppercase" style={{ fontFamily: "'VT323', monospace" }}>{label}</div>
         )}
       </div>
-      {/* LABEL FIX: Shows item name if equipped, otherwise "Head", "Body", etc. */}
-      <span className="font-bold text-[#5d3a1a] text-xl uppercase tracking-tighter" style={{ fontFamily: "'VT323', monospace" }}>
+      {/* Name Fix: Displays item name if equipped, otherwise 'Head', 'Body', etc. */}
+      <span className="font-bold text-[#5d3a1a] text-xl uppercase tracking-tighter text-center leading-none" style={{ fontFamily: "'VT323', monospace" }}>
         {item ? item.name : label}
       </span>
     </div>
@@ -133,13 +164,16 @@ export const Inventory = ({
 }: any) => {
   const [activeTab, setActiveTab] = useState<'items' | 'equipment' | 'pets'>('equipment');
 
+  // Defensive: Force inventory to be an array so .find() and .filter() never fail
   const safeInventory = Array.isArray(inventory) ? inventory : [];
   
+  // Optional chaining added to find logic
   const equippedHead = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Head');
   const equippedBody = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Body');
   const equippedAccessory = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Accessory');
 
   const renderFixedGrid = () => {
+    // Filter items based on the active tab
     const filteredBag = safeInventory.filter(inv => {
         if (!inv || !inv.item || inv.isEquipped) return false;
         const cat = inv.item.category;
@@ -150,9 +184,10 @@ export const Inventory = ({
     });
 
     const grid = [];
+    // We render 20 slots for a consistent backpack look
     for (let i = 0; i < 20; i++) {
       const itemInSlot = filteredBag.find(inv => inv.gridIndex === i);
-      if (itemInSlot) {
+      if (itemInSlot && itemInSlot.item) {
         grid.push(<GridItem key={itemInSlot._id || i} invSlot={itemInSlot} onSellItem={onSellItem} />);
       } else {
         grid.push(<EmptyGridSlot key={`empty-${i}`} index={i} onUnequipToSlot={onUnequipItem} onMoveItem={onMoveItem} />);
@@ -163,6 +198,7 @@ export const Inventory = ({
 
   return (
     <div className="h-full flex flex-col pt-4 animate-in fade-in duration-500">
+      {/* TAB NAVIGATION */}
       <div className="flex gap-2 px-8 border-b-4 border-[#5d3a1a] bg-[#3e2723]/20">
         <TabButton label="Equipment" active={activeTab === 'equipment'} onClick={() => setActiveTab('equipment')} />
         <TabButton label="Pets / Misc" active={activeTab === 'pets'} onClick={() => setActiveTab('pets')} />
@@ -170,15 +206,19 @@ export const Inventory = ({
       </div>
 
       <div className="flex-1 bg-[#fdf6e3] p-8 flex flex-col lg:flex-row gap-12 min-h-0">
+        
+        {/* LEFT PANEL: EQUIPPED CHARACTER SLOTS */}
         <div className="w-full lg:w-1/4 flex flex-row lg:flex-col gap-8 items-center justify-center border-b-4 lg:border-b-0 lg:border-r-4 border-[#d4c5a9] pb-8 lg:pb-0 lg:pr-12 border-dashed shrink-0">
            <ItemSlot label="Head" slotId="Head" equippedItem={equippedHead} onEquipDrop={onEquipItem} />
            <ItemSlot label="Body" slotId="Body" equippedItem={equippedBody} onEquipDrop={onEquipItem} />
            <ItemSlot label="Accessory" slotId="Accessory" equippedItem={equippedAccessory} onEquipDrop={onEquipItem} />
         </div>
 
+        {/* RIGHT PANEL: BACKPACK GRID */}
         <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-8 justify-items-center auto-rows-max overflow-y-auto pr-4 custom-scrollbar">
            {renderFixedGrid()}
         </div>
+
       </div>
     </div>
   );
