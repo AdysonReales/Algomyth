@@ -477,7 +477,7 @@ const App = () => {
 
       <audio id="global-bgm" loop />
 
-      {searchResult && (
+     {searchResult && (
   <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
     <div className="bg-[#fdf6e3] border-8 border-[#5d3a1a] p-8 w-full max-w-3xl relative shadow-2xl overflow-y-auto max-h-[90vh]">
       <button onClick={() => setSearchResult(null)} className="absolute top-2 right-4 text-4xl font-bold text-[#5d3a1a] hover:text-red-600 transition-colors z-[110]">×</button>
@@ -486,28 +486,33 @@ const App = () => {
         {/* AVATAR PREVIEW */}
         <div className="flex flex-col gap-6 items-center bg-[#d4a373] p-6 border-4 border-[#5d3a1a] shadow-xl">
           <div className="flex flex-col items-center justify-center relative min-w-48 min-h-72 bg-[#f4e4bc] border-4 border-[#5d3a1a] shadow-inner overflow-hidden">
-            {/* Body Gear Check */}
+            
+            {/* 1. BODY GEAR - Added /assets/body/ logic */}
             {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Body') && (
               <img 
-                src={searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Body').item?.image} 
+                src={`/assets/body/${searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Body').item?.image}`} 
                 className="absolute inset-0 w-full h-full object-contain z-0 scale-150 -translate-y-4 pixelated" 
               />
             )}
             
-            <img src={getAssetUrl('default', 'default', searchResult.characterIndex || 1)} className="w-auto h-72 object-contain z-10 pixelated" />
+            {/* 2. CHARACTER SKIN - Fixed Mismatch (Using searchResult.skinVariant) */}
+            <img 
+              src={getAssetUrl(searchResult.skinVariant || 'default', searchResult.skinVariant || 'default', searchResult.characterIndex || 1)} 
+              className="w-auto h-72 object-contain z-10 pixelated" 
+            />
             
-            {/* Accessory Check */}
+            {/* 3. ACCESSORY GEAR - Added /assets/items/ path */}
             {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Accessory') && (
               <img 
-                src={searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Accessory').item?.image} 
+                src={`/assets/items/${searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Accessory').item?.image}`} 
                 className="absolute bottom-4 right-2 w-20 h-20 object-contain z-30 pixelated" 
               />
             )}
 
-            {/* Head Gear Check */}
+            {/* 4. HEAD GEAR - Added /assets/items/ path */}
             {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Head') && (
               <img 
-                src={searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Head').item?.image} 
+                src={`/assets/items/${searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Head').item?.image}`} 
                 className="absolute top-8 w-16 h-16 object-contain z-20 animate-bounce pixelated" 
               />
             )}
