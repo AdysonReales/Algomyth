@@ -37,7 +37,7 @@ export const PreLogin = ({ onGetStarted }: { onGetStarted: () => void }) => {
 
         {/* Feature Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-          <FeatureCard icon={<Code size={40} />} title="Learn" desc="Master Python logic through RPG battles." />
+          <FeatureCard icon={<Code size={40} />} title="Learn" desc="C++ logic through RPG battles." />
           <FeatureCard icon={<Shield size={40} />} title="Battle" desc="Defeat bugs and bosses with syntax." />
           <FeatureCard icon={<Scroll size={40} />} title="Collect" desc="Earn loot and customize your avatar." />
         </div>
