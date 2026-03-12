@@ -43,7 +43,6 @@ const EmptyGridSlot = ({ index, onUnequipToSlot, onMoveItem }: any) => {
 };
 
 // --- 2. Grid Item ---
-// --- 2. Grid Item ---
 const GridItem = ({ invSlot, onSellItem }: any) => {
   const item = invSlot?.item;
   if (!item) return null;
@@ -53,13 +52,9 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
     e.dataTransfer.effectAllowed = "move";
   };
 
-  // SMART PATHING: If the DB already has the path, use it. 
-  // Otherwise, route based on category.
-  const itemPath = item?.image?.startsWith('/assets') 
-    ? item.image 
-    : (item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings'))
-      ? `/assets/body/${item?.image}`
-      : `/assets/items/${item?.image}`;
+  // CORRECT PATHING: Body items go to /assets/body/, others to /assets/items/
+  const isBodyItem = item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings');
+  const itemPath = isBodyItem ? `/assets/body/${item?.image}` : `/assets/items/${item?.image}`;
 
   return (
     <div draggable onDragStart={handleDragStart} className="flex flex-col items-center gap-1 group w-24 cursor-grab active:cursor-grabbing relative z-10">
@@ -70,7 +65,7 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
             style={{ imageRendering: 'pixelated' }} 
             alt={item?.name} 
             onError={(e) => {
-              e.currentTarget.style.display = 'none'; // Clean console from broken links
+              e.currentTarget.style.opacity = '0.4'; // Dims if failed, avoids DNS errors
             }}
           />
           <button onClick={(e) => { e.stopPropagation(); onSellItem(invSlot._id); }} className="absolute -top-2 -right-2 bg-red-600 border-2 border-black p-1 hidden group-hover:block hover:bg-red-700 shadow-md">
@@ -85,16 +80,12 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
 };
 
 // --- 3. Equipment Slot ---
-// --- 3. Equipment Slot ---
 const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
   const item = equippedItem?.item;
   
-  // SMART PATHING: Same logic as GridItem
-  const itemPath = item?.image?.startsWith('/assets') 
-    ? item.image 
-    : (item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings'))
-      ? `/assets/body/${item?.image}`
-      : `/assets/items/${item?.image}`;
+  // Folder routing for the equipped slot
+  const isBodyItem = item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings');
+  const itemPath = isBodyItem ? `/assets/body/${item?.image}` : `/assets/items/${item?.image}`;
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -111,19 +102,15 @@ const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
           ${equippedItem ? `bg-[#fdf6e3] ${getSlotColor(slotId)} cursor-grab scale-105 shadow-lg` : `bg-[#d4a373] ${getSlotColor(slotId)} opacity-40`}`}
       >
         {item ? (
-          <img 
-            src={itemPath} 
-            className="w-16 h-16 object-contain" 
-            style={{ imageRendering: 'pixelated' }} 
-            alt={item.name} 
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-          />
+          <img src={itemPath} className="w-16 h-16 object-contain" style={{ imageRendering: 'pixelated' }} alt={item.name} />
         ) : (
           <div className="text-[#5d3a1a] opacity-30 text-xl font-bold uppercase" style={{ fontFamily: "'VT323', monospace" }}>{label}</div>
         )}
       </div>
+      
+      {/* Name label fix: Shows item name if equipped, otherwise category label */}
       <span className="font-bold text-[#5d3a1a] text-xl uppercase tracking-tighter text-center leading-none" style={{ fontFamily: "'VT323', monospace" }}>
-        {item ? item.name : label}
+        {item?.name ? item.name : label}
       </span>
     </div>
   );
@@ -138,29 +125,27 @@ export const Inventory = ({ inventory = [], onEquipItem, onUnequipItem, onMoveIt
   const equippedBody = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Body');
   const equippedAccessory = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Accessory');
 
-const renderFixedGrid = () => {
-  const filteredBag = safeInventory.filter(inv => {
-    // Check if inv AND inv.item exist before checking category
-    if (!inv || !inv.item || inv.isEquipped) return false;
-    const cat = inv.item.category;
-    if (activeTab === 'equipment') return cat === 'Head' || cat === 'Body';
-    if (activeTab === 'pets') return cat === 'Pet' || cat === 'Accessory';
-    if (activeTab === 'items') return cat === 'Consumable' || cat === 'Quest' || cat === 'Scroll';
-    return true;
-  });
+  const renderFixedGrid = () => {
+    const filteredBag = safeInventory.filter(inv => {
+        if (!inv || !inv.item || inv.isEquipped) return false;
+        const cat = inv.item.category;
+        if (activeTab === 'equipment') return cat === 'Head' || cat === 'Body';
+        if (activeTab === 'pets') return cat === 'Pet' || cat === 'Accessory';
+        if (activeTab === 'items') return cat === 'Consumable' || cat === 'Quest' || cat === 'Scroll';
+        return true;
+    });
 
-  const grid = [];
-  for (let i = 0; i < 20; i++) {
-    const itemInSlot = filteredBag.find(inv => inv.gridIndex === i);
-    // Extra safety: only render GridItem if itemInSlot and itemInSlot.item exist
-    if (itemInSlot && itemInSlot.item) {
-      grid.push(<GridItem key={itemInSlot._id || i} invSlot={itemInSlot} onSellItem={onSellItem} />);
-    } else {
-      grid.push(<EmptyGridSlot key={`empty-${i}`} index={i} onUnequipToSlot={onUnequipItem} onMoveItem={onMoveItem} />);
+    const grid = [];
+    for (let i = 0; i < 20; i++) {
+      const itemInSlot = filteredBag.find(inv => inv.gridIndex === i);
+      if (itemInSlot && itemInSlot.item) {
+        grid.push(<GridItem key={itemInSlot._id || i} invSlot={itemInSlot} onSellItem={onSellItem} />);
+      } else {
+        grid.push(<EmptyGridSlot key={`empty-${i}`} index={i} onUnequipToSlot={onUnequipItem} onMoveItem={onMoveItem} />);
+      }
     }
-  }
-  return grid;
-};
+    return grid;
+  };
 
   return (
     <div className="h-full flex flex-col pt-4">
@@ -175,7 +160,7 @@ const renderFixedGrid = () => {
            <ItemSlot label="Body" slotId="Body" equippedItem={equippedBody} onEquipDrop={onEquipItem} />
            <ItemSlot label="Accessory" slotId="Accessory" equippedItem={equippedAccessory} onEquipDrop={onEquipItem} />
         </div>
-        <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-8 justify-items-center auto-rows-max overflow-y-auto pr-4">
+        <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-8 justify-items-center auto-rows-max overflow-y-auto pr-4 custom-scrollbar">
            {renderFixedGrid()}
         </div>
       </div>
