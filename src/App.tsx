@@ -13,7 +13,6 @@ import { Help } from './Help';
 import { PreLogin } from './PreLogin'; 
 import { Auth } from './Auth';    
 
-//components from src/components for dropdown
 import { MessagesPanel } from './components/MessagesPanel';
 import { AccountSettings } from './components/AccountSettings';
 import { AudioSettings } from './components/AudioSettings';
@@ -27,7 +26,6 @@ axios.interceptors.request.use((config: any) => {
   return config;
 });
 
-// --- EMOJI LOOKUP MAP ---
 const achievementEmojis: Record<string, string> = {
   SHOP_BUY: "💰", EQUIP_ARMOR: "🛡️", FIRST_DAILY: "📅", BEAT_MEDIUM: "⚔️",
   LVL_5: "🌟", JOIN_GUILD: "🤝", ADD_GFRIEND: "💖", BEAT_HARD: "💀",
@@ -36,12 +34,41 @@ const achievementEmojis: Record<string, string> = {
 };
 
 const getAssetUrl = (folder: string, prefix: string, index: number) => {
-  // FORCE UPDATE: 1:15 PM FIX
   return `/assets/${folder}/${prefix}_${index}.png`;
 };
 
+// --- UNIVERSAL PATH RESOLVER ---
+// This prevents the "assets/items/assets/items" double-nesting error
+const getSmartPath = (item: any) => {
+    if (!item || !item.image) return "";
+    
+    // Clean filename: Strips any existing paths like "/assets/items/"
+    const img = item.image.split('/').pop(); 
+    const imgLower = img.toLowerCase();
+    const name = item.name?.toLowerCase() || "";
+    const cat = item.category?.toLowerCase() || "";
 
-// --- Pixel Art Components ---
+    // 1. CLASS GEAR
+    if (imgLower.includes('knight') || imgLower.includes('mage') || imgLower.includes('rogue')) {
+        return `/assets/items/${img}`;
+    }
+
+    // 2. ACCESSORIES / PETS
+    if (cat === 'accessory' || cat === 'pet') {
+        const folders = ['Flyte', 'Gryfon', 'Igalyph', 'Laguna', 'Nimblithe', 'Wolfren'];
+        const targetFolder = folders.find(f => name.includes(f.toLowerCase()));
+        if (targetFolder) return `/assets/accessory/${targetFolder}/${img}`;
+        return `/assets/accessory/${img}`;
+    }
+
+    // 3. BODY / WINGS
+    if (cat === 'body' || name.includes('wings') || name.includes('shift') || imgLower.includes('black')) {
+        return `/assets/body/${img}`;
+    }
+
+    return `/assets/items/${img}`;
+};
+
 const PixelButton = ({ label, active, onClick }: { label: string, active?: boolean, onClick?: () => void }) => (
   <button 
     onClick={onClick}
@@ -95,7 +122,7 @@ const HeaderBar = ({ activeTab, setActiveTab, onLogout }: { activeTab: string, s
     <div className="bg-[#5d3a1a] px-4 lg:px-8 pt-6 pb-0 flex items-end justify-between border-b-8 border-[#3e2723] relative z-50 shadow-xl">
       <div className="flex items-center gap-4 mb-2 shrink-0">
         <div className="bg-[#f4d0a3] border-4 border-[#3e2723] px-4 py-2 rounded-lg shadow-md transform -rotate-2 flex items-center gap-3">
-          <AlgomythLogo size={32} /> {/* CUSTOM LOGO ADDED */}
+          <AlgomythLogo size={32} />
           <span className="text-2xl lg:text-3xl font-bold text-[#5d3a1a] tracking-widest" style={{ fontFamily: "'VT323', monospace" }}>ALGOMYTH</span>
         </div>
       </div>
@@ -110,7 +137,6 @@ const HeaderBar = ({ activeTab, setActiveTab, onLogout }: { activeTab: string, s
       </div>
 
       <div className="flex gap-2 lg:gap-3 pb-4 ml-4 shrink-0 relative">
-        {/* REPLACED "M" BUTTON WITH LOGO */}
         <div className="relative">
           <button 
             onClick={() => { playSFX('sfx_click.ogg'); setActiveDropdown(activeDropdown === 'mail' ? null : 'mail'); }}
@@ -138,7 +164,6 @@ const HeaderBar = ({ activeTab, setActiveTab, onLogout }: { activeTab: string, s
           )}
         </div>
 
-        {/* REPLACED "U" BUTTON WITH MAPUA ICON */}
         <div className="relative">
           <button 
             onClick={() => { playSFX('sfx_click.ogg'); setActiveDropdown(activeDropdown === 'user' ? null : 'user'); }}
@@ -185,39 +210,6 @@ const AvatarSection = ({ userData, userGold, inventory = [], onRemoveBadge }: an
   const bodyGear = inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Body')?.item;
   const accessoryGear = inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Accessory')?.item;
 
-  // 🛠️ SMART PATH HELPER: Routes items to the correct folders based on your file hierarchy
-  const getPanelPath = (item: any) => {
-    if (!item || !item.image) return "";
-    const img = item.image;
-    const imgLower = img.toLowerCase();
-    const name = item.name?.toLowerCase() || "";
-    const cat = item.category?.toLowerCase() || "";
-
-    // 1. Force items folder for class gear (knight, mage, rogue)
-    if (imgLower.includes('knight') || imgLower.includes('mage') || imgLower.includes('rogue')) {
-        return `/assets/items/${img}`;
-    }
-
-    // 2. Force body folder for Wings and Shift items
-    if (cat === 'body' || name.includes('wings') || name.includes('shift')) {
-        return `/assets/body/${img}`;
-    }
-
-    // 3. Accessory sub-folder logic
-    if (cat === 'accessory' || cat === 'pet') {
-        if (name.includes('flyte'))     return `/assets/accessory/Flyte/${img}`;
-        if (name.includes('gryfon'))    return `/assets/accessory/Gryfon/${img}`;
-        if (name.includes('igalyph'))   return `/assets/accessory/Igalyph/${img}`;
-        if (name.includes('laguna'))    return `/assets/accessory/Laguna/${img}`;
-        if (name.includes('nimblithe')) return `/assets/accessory/Nimblithe/${img}`;
-        if (name.includes('wolfren'))   return `/assets/accessory/Wolfren/${img}`;
-        return `/assets/accessory/${img}`;
-    }
-
-    // Default Fallback
-    return `/assets/items/${img}`;
-  };
-
   return (
     <div className="p-8 bg-[#a67c52] border-b-8 border-[#5d3a1a] relative shadow-inner z-10">
       <div className="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(90deg,transparent,transparent_40px,#3e2723_40px,#3e2723_44px)] pointer-events-none"></div>
@@ -226,49 +218,20 @@ const AvatarSection = ({ userData, userGold, inventory = [], onRemoveBadge }: an
         <div className="flex gap-8 items-start bg-[#d4a373] p-6 border-4 border-[#5d3a1a] shadow-xl min-w-[450px]">
           <div className="flex flex-col gap-4 items-center">
              <div className="w-48 h-72 bg-[#f4e4bc] border-4 border-[#5d3a1a] flex flex-col items-center justify-center overflow-hidden shadow-inner relative">
-              {/* BODY GEAR LAYER (Z-0) */}
-              {bodyGear && (
-                <div className="absolute inset-0 flex items-center justify-center z-0">
-                  <img 
-                    src={getPanelPath(bodyGear)} 
-                    className="w-full h-full object-contain scale-150 -translate-y-12" 
-                    style={{ imageRendering: 'pixelated' }} 
-                    alt="Body Gear" 
-                  />
-                </div>
-              )}
-
-                {/* CHARACTER SKIN LAYER (Z-10) */}
+              {bodyGear && <div className="absolute inset-0 flex items-center justify-center z-0"><img src={getSmartPath(bodyGear)} className="w-full h-full object-contain scale-150 -translate-y-12" style={{ imageRendering: 'pixelated' }} alt="Body" /></div>}
                 <div className="absolute inset-0 w-full h-full p-2 flex items-end justify-center z-10">
                   <img src={getAssetUrl(skinVariant, skinVariant, charIndex)} className="absolute w-full h-[90%] object-contain" style={{ imageRendering: 'pixelated' }} />
                   {armorVariant !== 'default' && <img src={getAssetUrl(armorVariant, armorVariant, charIndex)} className="absolute w-full h-[90%] object-contain" style={{ imageRendering: 'pixelated' }} />}
                 </div>
-
-                {/* HEAD GEAR LAYER (Z-20) */}
-                {headGear && (
-                  <div className="absolute top-8 w-16 h-16 z-20 flex items-center justify-center animate-bounce">
-                    <img src={getPanelPath(headGear)} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Head Gear" />
-                  </div>
-                )}
-
-                {/* ACCESSORY/PET LAYER (Z-30) */}
-                {accessoryGear && (
-                  <div className="absolute bottom-6 right-2 w-20 h-20 z-30 drop-shadow-lg">
-                    <img src={getPanelPath(accessoryGear)} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Accessory Gear" />
-                  </div>
-                )}
-                
+                {headGear && <div className="absolute top-8 w-16 h-16 z-20 flex items-center justify-center animate-bounce"><img src={getSmartPath(headGear)} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Head" /></div>}
+                {accessoryGear && <div className="absolute bottom-6 right-2 w-20 h-20 z-30 drop-shadow-lg"><img src={getSmartPath(accessoryGear)} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Accessory" /></div>}
                 <span className="absolute bottom-2 text-[10px] font-bold text-[#5d3a1a] opacity-30 uppercase z-50">Algomyth Identity</span>
               </div>
 
              <div className="flex gap-3 w-full justify-between">
                 {[headGear, bodyGear, accessoryGear].map((gear, idx) => (
                   <div key={idx} className="w-14 h-14 bg-[#b88a5f] border-4 border-[#5d3a1a] flex items-center justify-center shadow-inner">
-                    {gear ? ( 
-                      <img src={getPanelPath(gear)} className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }} alt="Gear Item" />
-                    ) : (
-                      <div className="w-8 h-8 bg-[#5d3a1a] opacity-10"></div>
-                    )}
+                    {gear ? <img src={getSmartPath(gear)} className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }} alt="Gear" /> : <div className="w-8 h-8 bg-[#5d3a1a] opacity-10"></div>}
                   </div>
                 ))}
              </div>
@@ -336,7 +299,6 @@ const App = () => {
       alert("No explorer found with that name.");
       return;
     }
-    // Initialize empty arrays if they don't exist to prevent modal crashes
     const sanitizedUser = {
       ...res.data,
       inventory: res.data.inventory || [],
@@ -421,21 +383,17 @@ const App = () => {
     }
   }, [activeTask, view]);
 
-  // --- FIX: ENHANCED ENTRY LOGIC ---
   const handleEnterChallenge = async (data: any, type: 'standard' | 'custom', isRepeat: boolean, guildId?: string) => {
   if (type === 'standard') {
     try {
-      // DATA is the problemId string from the Guild model
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/tasks/${data}`);
-      
       const taskData = {
         ...res.data,
         nodeTitle: res.data.nodeTitle || res.data.title || "Quest",
         phases: res.data.phases || [],
         isRepeat, 
-        guildId // Passed to the IDE so the backend knows this is a Guild session
+        guildId 
       };
-      
       setActiveTask(taskData);
       setActiveTab('tasks');
     } catch (error) {
@@ -455,7 +413,7 @@ const App = () => {
           description: data.description,
           constraints: Array.isArray(data.constraints) ? data.constraints : [data.constraints],
           output: data.output,
-          starterCode: data.starterCode || `#include <iostream>\nusing namespace std;\n\nint main() {\n  // Code here\n  return 0;\n}`
+          starterCode: data.starterCode || `#include <iostream>\nusing namespace std;\n\nint main() {\n   // Code here\n   return 0;\n}`
         }],
         reward: { gold: 50, xp: 100 }
       };
@@ -475,16 +433,11 @@ const App = () => {
               task={activeTask} 
               onExit={() => setActiveTask(null)}
               onComplete={async () => {
-                // --- FIX: STATE RACE CONDITION AVOIDED ---
-                const wasGuildTask = activeTask.guildId; // 1. Save the guild context BEFORE clearing it
-
+                const wasGuildTask = activeTask.guildId;
                 if (wasGuildTask || !activeTask.isRepeat) {
-                  await refreshUserData(); // 2. Refresh data so the "Lock" status updates
+                  await refreshUserData();
                 }
-
-                setActiveTask(null); // 3. Clear IDE
-
-                // 4. Safely redirect back to Guilds tab if we came from a Guild
+                setActiveTask(null);
                 if (wasGuildTask) {
                   setActiveTab('guilds');
                 }
@@ -495,30 +448,10 @@ const App = () => {
         return <TaskDashboard onSelectTask={(task) => setActiveTask(task)} userData={userData} setUserData={setUserData} achievementEmojis={achievementEmojis} />;
       case 'inventory': return <Inventory inventory={inventory} onEquipItem={handleEquipItem} onUnequipItem={handleUnequipItem} onMoveItem={handleMoveItem} onSellItem={handleSellItem} />;
       case 'shop': return <Shop onBuyItem={handleBuyItem} userInventory={inventory} userData={userData} />;
-      case 'guilds': 
-  return (
-    <Guilds 
-      userData={userData} 
-      onEnterChallenge={(data: any, type: 'standard' | 'custom', isRepeat: boolean, gId?: string) => {
-        // If gId is missing, we grab it from the viewingHall state inside Guilds.tsx
-        // but passing it directly is safer.
-        handleEnterChallenge(data, type, isRepeat, gId);
-      }}
-    />
-  );
+      case 'guilds': return <Guilds userData={userData} onEnterChallenge={handleEnterChallenge} />;
       case 'library': return <Library />;
       case 'help': return <Help />;
-      case 'messages': 
-  return (
-    <MessagesPanel 
-      userData={userData} 
-      onSearch={handleSearchUser} 
-      chatTarget={chatTarget} 
-      // Important: This clears the target once the chat is opened/closed 
-      // to prevent "sticky" white screens on re-entry
-      clearChatTarget={() => setChatTarget(null)} 
-    />
-  );
+      case 'messages': return <MessagesPanel userData={userData} onSearch={handleSearchUser} chatTarget={chatTarget} clearChatTarget={() => setChatTarget(null)} />;
       case 'account': return <AccountSettings userData={userData} onUpdate={refreshUserData} />;
       case 'audio': return <AudioSettings settings={userData.settings} onUpdate={refreshUserData} />;
       default: return <TaskDashboard onSelectTask={(task) => setActiveTask(task)} userData={userData} setUserData={setUserData} achievementEmojis={achievementEmojis} />;
@@ -539,105 +472,85 @@ const App = () => {
 
       <audio id="global-bgm" loop />
 
-   {searchResult && (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-    <div className="bg-[#fdf6e3] border-8 border-[#5d3a1a] p-8 w-full max-w-3xl relative shadow-2xl overflow-y-auto max-h-[90vh]">
-      <button onClick={() => setSearchResult(null)} className="absolute top-2 right-4 text-4xl font-bold text-[#5d3a1a] hover:text-red-600 transition-colors z-[110]">×</button>
-      
-      <div className="flex flex-col md:flex-row gap-10 items-start">
-        <div className="flex flex-col gap-6 items-center bg-[#d4a373] p-6 border-4 border-[#5d3a1a] shadow-xl">
-          <div className="flex flex-col items-center justify-center relative min-w-48 min-h-72 bg-[#f4e4bc] border-4 border-[#5d3a1a] shadow-inner overflow-hidden">
-            
-            {/* 1. SEARCH MODAL BODY GEAR */}
-            {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Body') && (
-              <img 
-                src={(() => {
-                  const gear = searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Body').item;
-                  const img = gear.image.toLowerCase();
-                  if (img.includes('knight') || img.includes('mage') || img.includes('rogue')) return `/assets/items/${gear.image}`;
-                  return `/assets/body/${gear.image}`;
-                })()} 
-                className="absolute inset-0 w-full h-full object-contain z-0 scale-150 -translate-y-4 pixelated" 
-              />
-            )}
-            
-            <img src={getAssetUrl(searchResult.skinVariant || 'default', searchResult.skinVariant || 'default', searchResult.characterIndex || 1)} className="w-auto h-72 object-contain z-10 pixelated" />
-            
-            {/* 2. SEARCH MODAL ACCESSORY GEAR */}
-            {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Accessory') && (
-              <img 
-                src={(() => {
-                  const gear = searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Accessory').item;
-                  const name = gear.name?.toLowerCase() || "";
-                  if (name.includes('flyte')) return `/assets/accessory/Flyte/${gear.image}`;
-                  if (name.includes('gryfon')) return `/assets/accessory/Gryfon/${gear.image}`;
-                  if (name.includes('igalyph')) return `/assets/accessory/Igalyph/${gear.image}`;
-                  if (name.includes('laguna')) return `/assets/accessory/Laguna/${gear.image}`;
-                  if (name.includes('nimblithe')) return `/assets/accessory/Nimblithe/${gear.image}`;
-                  if (name.includes('wolfren')) return `/assets/accessory/Wolfren/${gear.image}`;
-                  return `/assets/items/${gear.image}`;
-                })()} 
-                className="absolute bottom-4 right-2 w-20 h-20 object-contain z-30 pixelated" 
-              />
-            )}
+      {searchResult && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-[#fdf6e3] border-8 border-[#5d3a1a] p-8 w-full max-w-3xl relative shadow-2xl overflow-y-auto max-h-[90vh]">
+            <button onClick={() => setSearchResult(null)} className="absolute top-2 right-4 text-4xl font-bold text-[#5d3a1a] hover:text-red-600 transition-colors z-[110]">×</button>
+            <div className="flex flex-col md:flex-row gap-10 items-start">
+              <div className="flex flex-col gap-6 items-center bg-[#d4a373] p-6 border-4 border-[#5d3a1a] shadow-xl">
+                <div className="flex flex-col items-center justify-center relative min-w-48 min-h-72 bg-[#f4e4bc] border-4 border-[#5d3a1a] shadow-inner overflow-hidden">
+                  
+                  {/* Body Gear Preview */}
+                  {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Body') && (
+                    <img 
+                      src={getSmartPath(searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Body').item)} 
+                      className="absolute inset-0 w-full h-full object-contain z-0 scale-150 -translate-y-4 pixelated" 
+                    />
+                  )}
+                  
+                  <img src={getAssetUrl(searchResult.skinVariant || 'default', searchResult.skinVariant || 'default', searchResult.characterIndex || 1)} className="w-auto h-72 object-contain z-10 pixelated" />
+                  
+                  {/* Accessory Gear Preview */}
+                  {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Accessory') && (
+                    <img 
+                      src={getSmartPath(searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Accessory').item)} 
+                      className="absolute bottom-4 right-2 w-20 h-20 object-contain z-30 pixelated" 
+                    />
+                  )}
 
-            {/* 3. SEARCH MODAL HEAD GEAR */}
-            {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Head') && (
-              <img 
-                src={`/assets/items/${searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Head').item?.image}`} 
-                className="absolute top-8 w-16 h-16 object-contain z-20 animate-bounce pixelated" 
-              />
-            )}
-          </div>
-        </div>
+                  {/* Head Gear Preview */}
+                  {searchResult.inventory?.find((i: any) => i?.isEquipped && i?.equippedSlot === 'Head') && (
+                    <img 
+                      src={getSmartPath(searchResult.inventory.find((i: any) => i.isEquipped && i.equippedSlot === 'Head').item)} 
+                      className="absolute top-8 w-16 h-16 object-contain z-20 animate-bounce pixelated" 
+                    />
+                  )}
+                </div>
+              </div>
 
-        {/* INFO PANEL */}
-        <div className="flex-1 space-y-6" style={{ fontFamily: "'VT323', monospace" }}>
-          <div>
-            <h2 className="text-6xl font-bold text-[#3e2723] tracking-tighter">@{searchResult.username || 'Ghost'}</h2>
-            <div className="text-[#5d3a1a] text-2xl font-bold mt-1 uppercase">Level {searchResult.stats?.level || 1} Explorer</div>
-          </div>
+              <div className="flex-1 space-y-6" style={{ fontFamily: "'VT323', monospace" }}>
+                <div>
+                  <h2 className="text-6xl font-bold text-[#3e2723] tracking-tighter">@{searchResult.username || 'Ghost'}</h2>
+                  <div className="text-[#5d3a1a] text-2xl font-bold mt-1 uppercase">Level {searchResult.stats?.level || 1} Explorer</div>
+                </div>
 
-          <div className="bg-[#d4a373] p-5 border-4 border-[#5d3a1a] shadow-inner">
-            <h3 className="text-[#3e2723] text-2xl font-bold mb-3 border-b-2 border-[#5d3a1a] inline-block pr-4 uppercase">Badge Display</h3>
-            <div className="flex gap-2 flex-wrap">
-              {[...Array(5)].map((_, i) => {
-                const pinnedKey = searchResult.pinnedAchievements?.[i];
-                const emoji = pinnedKey ? achievementEmojis[pinnedKey] : null;
-                return (
-                  <div key={i} className={`w-14 h-14 border-4 border-[#5d3a1a] flex items-center justify-center text-3xl shadow-md ${emoji ? 'bg-[#f4e4bc]' : 'bg-[#cbb092] opacity-50 shadow-inner'}`}>
-                    {emoji || ''}
+                <div className="bg-[#d4a373] p-5 border-4 border-[#5d3a1a] shadow-inner">
+                  <h3 className="text-[#3e2723] text-2xl font-bold mb-3 border-b-2 border-[#5d3a1a] inline-block pr-4 uppercase">Badge Display</h3>
+                  <div className="flex gap-2 flex-wrap">
+                    {[...Array(5)].map((_, i) => {
+                      const pinnedKey = searchResult.pinnedAchievements?.[i];
+                      const emoji = pinnedKey ? achievementEmojis[pinnedKey] : null;
+                      return (
+                        <div key={i} className={`w-14 h-14 border-4 border-[#5d3a1a] flex items-center justify-center text-3xl shadow-md ${emoji ? 'bg-[#f4e4bc]' : 'bg-[#cbb092] opacity-50 shadow-inner'}`}>
+                          {emoji || ''}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+
+                <button 
+                  disabled={searchResult._id === userData?._id}
+                  onClick={() => { 
+                    setChatTarget({ _id: searchResult._id, username: searchResult.username }); 
+                    setSearchResult(null); 
+                    setActiveTab('messages'); 
+                    playSFX('sfx_click.ogg'); 
+                  }}
+                  className={`w-full py-4 border-4 border-[#3e2723] text-2xl font-bold uppercase transition-all
+                    ${searchResult._id === userData?._id 
+                      ? 'bg-gray-400 cursor-not-allowed opacity-50' 
+                      : 'bg-[#76c442] text-white hover:bg-[#5da035] shadow-[0_6px_0_#3e2723] active:translate-y-1 active:shadow-none'}`}
+                >
+                  {searchResult._id === userData?._id ? "This is You" : "Send Message"}
+                </button>
+              </div>
             </div>
           </div>
-
-          <button 
-            disabled={searchResult._id === userData?._id}
-            onClick={() => { 
-              setChatTarget({ _id: searchResult._id, username: searchResult.username }); 
-              setSearchResult(null); 
-              setActiveTab('messages'); 
-              playSFX('sfx_click.ogg'); 
-            }}
-            className={`w-full py-4 border-4 border-[#3e2723] text-2xl font-bold uppercase transition-all
-              ${searchResult._id === userData?._id 
-                ? 'bg-gray-400 cursor-not-allowed opacity-50' 
-                : 'bg-[#76c442] text-white hover:bg-[#5da035] shadow-[0_6px_0_#3e2723] active:translate-y-1 active:shadow-none'}`}
-          >
-            {searchResult._id === userData?._id ? "This is You" : "Send Message"}
-          </button>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
       <Footer />
     </div>
   );
 };
 export default App;
-//Vercel Force Update at 1:11 PM HAHAH
-// FORCE RE-SYNC: 1:14 PM FIX again
-// Force Push #100
