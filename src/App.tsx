@@ -36,10 +36,9 @@ const achievementEmojis: Record<string, string> = {
 };
 
 const getAssetUrl = (folder: string, prefix: string, index: number) => {
-  // Removing 'new URL' and starting with '/' fixes the Vite build error
+  // FORCE UPDATE: 1:15 PM FIX
   return `/assets/${folder}/${prefix}_${index}.png`;
 };
-
 
 
 // --- Pixel Art Components ---
