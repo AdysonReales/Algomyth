@@ -43,6 +43,7 @@ const EmptyGridSlot = ({ index, onUnequipToSlot, onMoveItem }: any) => {
 };
 
 // --- 2. Grid Item ---
+// --- 2. Grid Item ---
 const GridItem = ({ invSlot, onSellItem }: any) => {
   const item = invSlot?.item;
   if (!item) return null;
@@ -52,9 +53,13 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
     e.dataTransfer.effectAllowed = "move";
   };
 
-  // IMPROVED LOGIC: Check category OR if the name includes "wings"
-  const isWing = item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings');
-  const itemPath = isWing ? `/assets/body/${item?.image}` : `/assets/items/${item?.image}`;
+  // SMART PATHING: If the DB already has the path, use it. 
+  // Otherwise, route based on category.
+  const itemPath = item?.image?.startsWith('/assets') 
+    ? item.image 
+    : (item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings'))
+      ? `/assets/body/${item?.image}`
+      : `/assets/items/${item?.image}`;
 
   return (
     <div draggable onDragStart={handleDragStart} className="flex flex-col items-center gap-1 group w-24 cursor-grab active:cursor-grabbing relative z-10">
@@ -64,7 +69,9 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
             className="w-12 h-12 object-contain" 
             style={{ imageRendering: 'pixelated' }} 
             alt={item?.name} 
-            onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/64?text=📦')}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'; // Clean console from broken links
+            }}
           />
           <button onClick={(e) => { e.stopPropagation(); onSellItem(invSlot._id); }} className="absolute -top-2 -right-2 bg-red-600 border-2 border-black p-1 hidden group-hover:block hover:bg-red-700 shadow-md">
             <Trash2 size={12} color="white" />
@@ -78,12 +85,16 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
 };
 
 // --- 3. Equipment Slot ---
+// --- 3. Equipment Slot ---
 const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
   const item = equippedItem?.item;
   
-  // Same improved logic for the equipped slot
-  const isWing = item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings');
-  const itemPath = isWing ? `/assets/body/${item?.image}` : `/assets/items/${item?.image}`;
+  // SMART PATHING: Same logic as GridItem
+  const itemPath = item?.image?.startsWith('/assets') 
+    ? item.image 
+    : (item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings'))
+      ? `/assets/body/${item?.image}`
+      : `/assets/items/${item?.image}`;
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -100,7 +111,13 @@ const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
           ${equippedItem ? `bg-[#fdf6e3] ${getSlotColor(slotId)} cursor-grab scale-105 shadow-lg` : `bg-[#d4a373] ${getSlotColor(slotId)} opacity-40`}`}
       >
         {item ? (
-          <img src={itemPath} className="w-16 h-16 object-contain" style={{ imageRendering: 'pixelated' }} alt={item.name} />
+          <img 
+            src={itemPath} 
+            className="w-16 h-16 object-contain" 
+            style={{ imageRendering: 'pixelated' }} 
+            alt={item.name} 
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
         ) : (
           <div className="text-[#5d3a1a] opacity-30 text-xl font-bold uppercase" style={{ fontFamily: "'VT323', monospace" }}>{label}</div>
         )}
