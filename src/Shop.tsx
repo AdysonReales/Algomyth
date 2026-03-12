@@ -140,15 +140,20 @@ const filteredItems = shopItems.filter(item => {
     const cat = item.category?.toLowerCase();
     const imageName = item.image?.toLowerCase() || "";
 
-    // 1. HIDDEN ITEMS: Exclude anything that is Rogue or V6
-    if (imageName.includes('rogue') || imageName.includes('v6')) {
+    // 1. THE TRASH LIST: Only hide V6 or clearly broken files
+    if (imageName.includes('v6')) {
       return false;
     }
 
-    // 2. TAB FILTERING: Normal logic
-    if (activeTab === 'market') return cat === 'head' || cat === 'body' || cat === 'consumable';
-    if (activeTab === 'customize') return cat === 'pet' || cat === 'accessory' || cat === 'customization';
-    if (activeTab === 'quest') return cat === 'quest';
+    // 2. THE ALLOW LIST: Show Knight, Mage, and Rogue
+    // (This ensures the "Market" tab actually finds all three)
+    const isMarketItem = cat === 'head' || cat === 'body' || cat === 'consumable';
+    const isCustomizeItem = cat === 'pet' || cat === 'accessory' || cat === 'customization';
+    const isQuestItem = cat === 'quest';
+
+    if (activeTab === 'market' && isMarketItem) return true;
+    if (activeTab === 'customize' && isCustomizeItem) return true;
+    if (activeTab === 'quest' && isQuestItem) return true;
     
     return false;
   });
