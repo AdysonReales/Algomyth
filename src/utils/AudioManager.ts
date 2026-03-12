@@ -12,7 +12,7 @@ export const playSFX = (fileName: string) => {
   if (isMuted) return;
 
   // 2. Use the path that worked in your browser test
-  const audio = new Audio(`/src/assets/audio/${fileName}`);
+  const audio = new Audio(`/assets/audio/${fileName}`);
   
   // 3. Apply volume and play
   audio.volume = master * sfxVol;
