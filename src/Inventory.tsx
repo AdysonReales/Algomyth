@@ -48,6 +48,7 @@ const EmptyGridSlot = ({ index, onUnequipToSlot, onMoveItem }: any) => {
 };
 
 // --- 2. Grid Item ---
+// --- 2. Grid Item ---
 const GridItem = ({ invSlot, onSellItem }: any) => {
   const item = invSlot?.item;
   if (!item) return null;
@@ -57,7 +58,7 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
     e.dataTransfer.effectAllowed = "move";
   };
 
-  // Logic: Body items go to /assets/body/, everything else to /assets/items/
+  // Determine correct folder: 'Body' items go to /assets/body/, others to /assets/items/
   const itemPath = item?.category?.toLowerCase() === 'body' 
     ? `/assets/body/${item?.image}` 
     : `/assets/items/${item?.image}`;
@@ -77,6 +78,7 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
             onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/64?text=📦')}
           />
           
+          {/* SELL BUTTON ON HOVER */}
           <button 
             onClick={(e) => { e.stopPropagation(); onSellItem(invSlot._id); }}
             className="absolute -top-2 -right-2 bg-red-600 border-2 border-black p-1 hidden group-hover:block hover:bg-red-700 shadow-md"
@@ -91,9 +93,10 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
     </div>
   );
 };
-
+// --- 3. Equipment Slot ---
 // --- 3. Equipment Slot ---
 const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
+  // Determine correct folder for equipped items
   const itemPath = equippedItem?.item?.category?.toLowerCase() === 'body' 
     ? `/assets/body/${equippedItem.item.image}` 
     : `/assets/items/${equippedItem.item.image}`;
@@ -143,13 +146,16 @@ export const Inventory = ({
 }: any) => {
   const [activeTab, setActiveTab] = useState<'items' | 'equipment' | 'pets'>('equipment');
 
+  // Defensive: Force inventory to be an array so .find() and .filter() never fail
   const safeInventory = Array.isArray(inventory) ? inventory : [];
   
+  // Optional chaining added to find logic
   const equippedHead = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Head');
   const equippedBody = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Body');
   const equippedAccessory = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Accessory');
 
   const renderFixedGrid = () => {
+    // Filter items based on the active tab
     const filteredBag = safeInventory.filter(inv => {
         if (!inv || inv.isEquipped) return false;
         const cat = inv.item?.category;
@@ -160,6 +166,7 @@ export const Inventory = ({
     });
 
     const grid = [];
+    // We render 20 slots for a consistent backpack look
     for (let i = 0; i < 20; i++) {
       const itemInSlot = filteredBag.find(inv => inv.gridIndex === i);
       if (itemInSlot) {
@@ -173,6 +180,7 @@ export const Inventory = ({
 
   return (
     <div className="h-full flex flex-col pt-4 animate-in fade-in duration-500">
+      {/* TAB NAVIGATION */}
       <div className="flex gap-2 px-8 border-b-4 border-[#5d3a1a] bg-[#3e2723]/20">
         <TabButton label="Equipment" active={activeTab === 'equipment'} onClick={() => setActiveTab('equipment')} />
         <TabButton label="Pets / Misc" active={activeTab === 'pets'} onClick={() => setActiveTab('pets')} />
@@ -180,16 +188,21 @@ export const Inventory = ({
       </div>
 
       <div className="flex-1 bg-[#fdf6e3] p-8 flex flex-col lg:flex-row gap-12 min-h-0">
+        
+        {/* LEFT PANEL: EQUIPPED CHARACTER SLOTS */}
         <div className="w-full lg:w-1/4 flex flex-row lg:flex-col gap-8 items-center justify-center border-b-4 lg:border-b-0 lg:border-r-4 border-[#d4c5a9] pb-8 lg:pb-0 lg:pr-12 border-dashed shrink-0">
            <ItemSlot label="Head" slotId="Head" equippedItem={equippedHead} onEquipDrop={onEquipItem} />
            <ItemSlot label="Body" slotId="Body" equippedItem={equippedBody} onEquipDrop={onEquipItem} />
            <ItemSlot label="Accessory" slotId="Accessory" equippedItem={equippedAccessory} onEquipDrop={onEquipItem} />
         </div>
 
+        {/* RIGHT PANEL: BACKPACK GRID */}
         <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-8 justify-items-center auto-rows-max overflow-y-auto pr-4 custom-scrollbar">
            {renderFixedGrid()}
         </div>
+
       </div>
     </div>
   );
 };
+// Force Push #100
