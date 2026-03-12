@@ -350,7 +350,7 @@ const App = () => {
 
     const bgmPlayer = document.getElementById('global-bgm') as HTMLAudioElement;
     if (bgmPlayer) {
-      const targetTrack = activeTask ? 'assets/audio/bgm_code.mp3' : 'assets/audio/bgm_main.mp3';
+      const targetTrack = activeTask ? '/assets/audio/bgm_code.mp3' : '/assets/audio/bgm_main.mp3';
       if (!bgmPlayer.src.includes(targetTrack)) {
         bgmPlayer.src = targetTrack;
         bgmPlayer.play().catch(() => console.log("Audio waiting..."));
@@ -561,3 +561,4 @@ const App = () => {
   );
 };
 export default App;
+//Vercel Force Update at 1:11 PM HAHAH
