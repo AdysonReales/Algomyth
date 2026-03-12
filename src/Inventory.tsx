@@ -48,6 +48,7 @@ const EmptyGridSlot = ({ index, onUnequipToSlot, onMoveItem }: any) => {
 };
 
 // --- 2. Grid Item ---
+// --- 2. Grid Item ---
 const GridItem = ({ invSlot, onSellItem }: any) => {
   const item = invSlot?.item;
   if (!item) return null;
@@ -57,6 +58,11 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
     e.dataTransfer.effectAllowed = "move";
   };
 
+  // Determine correct folder: 'Body' items go to /assets/body/, others to /assets/items/
+  const itemPath = item?.category?.toLowerCase() === 'body' 
+    ? `/assets/body/${item?.image}` 
+    : `/assets/items/${item?.image}`;
+
   return (
     <div 
       draggable 
@@ -64,7 +70,13 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
       className="flex flex-col items-center gap-1 group w-24 cursor-grab active:cursor-grabbing relative z-10"
     >
       <div className={`w-20 h-20 bg-[#f4d0a3] border-4 ${getSlotColor(item?.category)} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform relative`}>
-          <img src={`/assets/items/${item?.image}`} className="w-12 h-12 object-contain" style={{ imageRendering: 'pixelated' }} alt={item?.name} />
+          <img 
+            src={itemPath} 
+            className="w-12 h-12 object-contain" 
+            style={{ imageRendering: 'pixelated' }} 
+            alt={item?.name} 
+            onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/64?text=📦')}
+          />
           
           {/* SELL BUTTON ON HOVER */}
           <button 
@@ -81,9 +93,14 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
     </div>
   );
 };
-
+// --- 3. Equipment Slot ---
 // --- 3. Equipment Slot ---
 const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
+  // Determine correct folder for equipped items
+  const itemPath = equippedItem?.item?.category?.toLowerCase() === 'body' 
+    ? `/assets/body/${equippedItem.item.image}` 
+    : `/assets/items/${equippedItem.item.image}`;
+
   return (
     <div className="flex flex-col items-center gap-2">
       <div 
@@ -101,18 +118,17 @@ const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
           ${equippedItem ? `bg-[#fdf6e3] ${getSlotColor(slotId)} cursor-grab scale-105 shadow-lg` : `bg-[#d4a373] ${getSlotColor(slotId)} opacity-40`}`}
       >
         {equippedItem?.item ? (
-  <img 
-    src={`/assets/items/${equippedItem.item.image}`} // Ensure the leading / is here
-    className="w-16 h-16 object-contain" 
-    style={{ imageRendering: 'pixelated' }} 
-    alt={equippedItem.item.name} 
-  />
-) : (
-  <div className="text-[#5d3a1a] opacity-30 text-xl font-bold uppercase" style={{ fontFamily: "'VT323', monospace" }}>{label}</div>
-)}
+          <img 
+            src={itemPath} 
+            className="w-16 h-16 object-contain" 
+            style={{ imageRendering: 'pixelated' }} 
+            alt={equippedItem.item.name} 
+          />
+        ) : (
+          <div className="text-[#5d3a1a] opacity-30 text-xl font-bold uppercase" style={{ fontFamily: "'VT323', monospace" }}>{label}</div>
+        )}
       </div>
       
-      {/* FIX: Display the Item Name if equipped, otherwise show the Category Label */}
       <span className="font-bold text-[#5d3a1a] text-xl uppercase tracking-tighter text-center leading-none" style={{ fontFamily: "'VT323', monospace" }}>
         {equippedItem?.item ? equippedItem.item.name : label}
       </span>
