@@ -26,17 +26,27 @@ const getSlotColor = (category: string | undefined) => {
 const getImagePath = (item: any) => {
     if (!item || !item.image) return '';
     
-    const img = item.image; 
+    const img = item.image;
+    
+    // 🎯 THE FIX: If the database string already contains "/assets/", 
+    // return it exactly as is. Don't add more folders!
+    if (img.includes('/assets/')) {
+        return img.startsWith('/') ? img : `/${img}`;
+    }
+
+    // Otherwise, continue with your folder logic
+    const imgLower = img.toLowerCase();
     const name = item.name?.toLowerCase() || '';
     const cat = item.category?.toLowerCase() || '';
-    const imgLower = img.toLowerCase();
 
-    // 1. CLASS GEAR (Items Folder)
     if (imgLower.includes('knight') || imgLower.includes('mage') || imgLower.includes('rogue')) {
         return `/assets/items/${img}`;
     }
 
-    // 2. ACCESSORIES / PETS (Sub-folder Logic)
+    if (cat === 'body' || name.includes('wings') || name.includes('shift')) {
+        return `/assets/body/${img}`;
+    }
+
     if (cat === 'accessory' || cat === 'pet') {
         if (name.includes('flyte'))     return `/assets/accessory/Flyte/${img}`;
         if (name.includes('gryfon'))    return `/assets/accessory/Gryfon/${img}`;
@@ -44,21 +54,11 @@ const getImagePath = (item: any) => {
         if (name.includes('laguna'))    return `/assets/accessory/Laguna/${img}`;
         if (name.includes('nimblithe')) return `/assets/accessory/Nimblithe/${img}`;
         if (name.includes('wolfren'))   return `/assets/accessory/Wolfren/${img}`;
-        
-        // Final fallback for items in main accessory folder
         return `/assets/accessory/${img}`;
     }
 
-    // 3. BODY / WINGS (Body Folder)
-    // This catches Aqua, Black, DWshift, etc. when categorized as Body
-    if (cat === 'body' || name.includes('wings') || name.includes('shift')) {
-        return `/assets/body/${img}`;
-    }
-
-    // 4. ABSOLUTE DEFAULT
     return `/assets/items/${img}`;
 };
-
 // --- 1. Empty Slot ---
 const EmptyGridSlot = ({ index, onUnequipToSlot, onMoveItem }: any) => {
   const handleDrop = (e: React.DragEvent) => {
