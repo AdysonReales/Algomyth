@@ -138,22 +138,18 @@ export const Shop = ({ onBuyItem, userInventory = [], userData }: { onBuyItem: (
 
 const filteredItems = shopItems.filter(item => {
     const cat = item.category?.toLowerCase();
-    const imageName = item.image?.toLowerCase() || "";
+    const itemClassReq = (item.classReq || 'all').toLowerCase().trim();
+    const normalizedUserClass = userClass.toLowerCase().trim();
 
-    // 1. THE TRASH LIST: Only hide V6 or clearly broken files
-    if (imageName.includes('v6')) {
+    // 1. CLASS FILTER: Only show items for your class or 'all'
+    if (itemClassReq !== 'all' && itemClassReq !== normalizedUserClass) {
       return false;
     }
 
-    // 2. THE ALLOW LIST: Show Knight, Mage, and Rogue
-    // (This ensures the "Market" tab actually finds all three)
-    const isMarketItem = cat === 'head' || cat === 'body' || cat === 'consumable';
-    const isCustomizeItem = cat === 'pet' || cat === 'accessory' || cat === 'customization';
-    const isQuestItem = cat === 'quest';
-
-    if (activeTab === 'market' && isMarketItem) return true;
-    if (activeTab === 'customize' && isCustomizeItem) return true;
-    if (activeTab === 'quest' && isQuestItem) return true;
+    // 2. TAB FILTER: Match the current shop tab
+    if (activeTab === 'market') return cat === 'head' || cat === 'body' || cat === 'consumable';
+    if (activeTab === 'customize') return cat === 'pet' || cat === 'accessory' || cat === 'customization';
+    if (activeTab === 'quest') return cat === 'quest';
     
     return false;
   });
