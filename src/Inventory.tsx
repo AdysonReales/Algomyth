@@ -25,38 +25,43 @@ const getSlotColor = (category: string | undefined) => {
 // --- SMART PATH RESOLVER ---
 // This looks at your exact folder structure from the screenshot
 // --- SMART PATH RESOLVER ---
+// --- SMART PATH RESOLVER (FINAL EMERGENCY VERSION) ---
 const getImagePath = (item: any) => {
     if (!item || !item.image) return '';
     
-    const img = item.image; // e.g., "Flyte.png"
+    const img = item.image; // e.g., "Black.png" or "knightV1.png"
+    const cat = item.category?.toLowerCase() || '';
     const name = item.name?.toLowerCase() || '';
     const imgLower = img.toLowerCase();
-    const cat = item.category?.toLowerCase() || '';
 
-    // 1. Check for specific Accessory sub-folders
-    if (imgLower.includes('flyte'))    return `/assets/accessory/Flyte/${img}`;
-    if (imgLower.includes('gryfon'))   return `/assets/accessory/Gryfon/${img}`;
-    if (imgLower.includes('igalyph'))  return `/assets/accessory/Igalyph/${img}`;
-    if (imgLower.includes('laguna'))   return `/assets/accessory/Laguna/${img}`;
-    if (imgLower.includes('nimblithe')) return `/assets/accessory/Nimblithe/${img}`;
-    if (imgLower.includes('wolfren'))  return `/assets/accessory/Wolfren/${img}`;
-
-    // 2. Class Armor logic (always in items)
-    if (imgLower.includes('mage') || imgLower.includes('knight') || imgLower.includes('rogue')) {
+    // 1. CLASS GEAR (knight, mage, rogue) -> public/assets/items/
+    if (imgLower.includes('knight') || imgLower.includes('mage') || imgLower.includes('rogue')) {
         return `/assets/items/${img}`;
     }
 
-    // 3. Wings/Shift logic (always in body)
+    // 2. BODY / WINGS (Aqua, Black, DWShift, etc.) -> public/assets/body/
     if (cat === 'body' || name.includes('wings') || name.includes('shift')) {
+        // This handles "Black.png" correctly for the wings
         return `/assets/body/${img}`;
     }
-    
-    // 4. Fallback for any other accessories or pets
+
+    // 3. ACCESSORIES / PETS -> public/assets/accessory/[SubFolder]/[Color].png
+    // Note: This assumes your Item Name includes the Pet type (e.g. "Flyte Pet")
     if (cat === 'accessory' || cat === 'pet') {
+        const folders = ['Flyte', 'Gryfon', 'Igalyph', 'Laguna', 'Nimblithe', 'Wolfren'];
+        
+        // Find which pet folder it belongs to based on the item name
+        const targetFolder = folders.find(f => name.includes(f.toLowerCase()));
+        
+        if (targetFolder) {
+            return `/assets/accessory/${targetFolder}/${img}`;
+        }
+        
+        // Fallback if no subfolder matches
         return `/assets/accessory/${img}`;
     }
 
-    // 5. Absolute Default
+    // 4. FINAL FALLBACK
     return `/assets/items/${img}`;
 };
 // --- 1. Empty Slot ---
