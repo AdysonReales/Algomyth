@@ -22,62 +22,52 @@ const getSlotColor = (category: string | undefined) => {
     return 'border-[#8b5a2b]'; 
 };
 
-// --- SMART PATH RESOLVER ---
-// This looks at your exact folder structure from the screenshot
-// --- SMART PATH RESOLVER ---
-// --- SMART PATH RESOLVER (FINAL EMERGENCY VERSION) ---
+// --- BRUTE FORCE PATH RESOLVER ---
 const getImagePath = (item: any) => {
     if (!item || !item.image) return '';
     
-    const img = item.image; // e.g., "Black.png" or "knightV1.png"
-    const cat = item.category?.toLowerCase() || '';
+    const img = item.image; 
     const name = item.name?.toLowerCase() || '';
+    const cat = item.category?.toLowerCase() || '';
     const imgLower = img.toLowerCase();
 
-    // 1. CLASS GEAR (knight, mage, rogue) -> public/assets/items/
+    // 1. CLASS GEAR (Items Folder)
     if (imgLower.includes('knight') || imgLower.includes('mage') || imgLower.includes('rogue')) {
         return `/assets/items/${img}`;
     }
 
-    // 2. BODY / WINGS (Aqua, Black, DWShift, etc.) -> public/assets/body/
-    if (cat === 'body' || name.includes('wings') || name.includes('shift')) {
-        // This handles "Black.png" correctly for the wings
-        return `/assets/body/${img}`;
-    }
-
-    // 3. ACCESSORIES / PETS -> public/assets/accessory/[SubFolder]/[Color].png
-    // Note: This assumes your Item Name includes the Pet type (e.g. "Flyte Pet")
+    // 2. ACCESSORIES / PETS (Sub-folder Logic)
     if (cat === 'accessory' || cat === 'pet') {
-        const folders = ['Flyte', 'Gryfon', 'Igalyph', 'Laguna', 'Nimblithe', 'Wolfren'];
+        if (name.includes('flyte'))     return `/assets/accessory/Flyte/${img}`;
+        if (name.includes('gryfon'))    return `/assets/accessory/Gryfon/${img}`;
+        if (name.includes('igalyph'))   return `/assets/accessory/Igalyph/${img}`;
+        if (name.includes('laguna'))    return `/assets/accessory/Laguna/${img}`;
+        if (name.includes('nimblithe')) return `/assets/accessory/Nimblithe/${img}`;
+        if (name.includes('wolfren'))   return `/assets/accessory/Wolfren/${img}`;
         
-        // Find which pet folder it belongs to based on the item name
-        const targetFolder = folders.find(f => name.includes(f.toLowerCase()));
-        
-        if (targetFolder) {
-            return `/assets/accessory/${targetFolder}/${img}`;
-        }
-        
-        // Fallback if no subfolder matches
+        // Final fallback for items in main accessory folder
         return `/assets/accessory/${img}`;
     }
 
-    // 4. FINAL FALLBACK
+    // 3. BODY / WINGS (Body Folder)
+    // This catches Aqua, Black, DWshift, etc. when categorized as Body
+    if (cat === 'body' || name.includes('wings') || name.includes('shift')) {
+        return `/assets/body/${img}`;
+    }
+
+    // 4. ABSOLUTE DEFAULT
     return `/assets/items/${img}`;
 };
+
 // --- 1. Empty Slot ---
 const EmptyGridSlot = ({ index, onUnequipToSlot, onMoveItem }: any) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const unequipId = e.dataTransfer.getData('unequipId'); 
     const moveId = e.dataTransfer.getData('itemId');      
-
-    if (unequipId) {
-      onUnequipToSlot(unequipId, index); 
-    } else if (moveId) {
-      onMoveItem(moveId, index);
-    }
+    if (unequipId) onUnequipToSlot(unequipId, index); 
+    else if (moveId) onMoveItem(moveId, index);
   };
-
   return (
     <div 
       onDragOver={(e) => e.preventDefault()}
@@ -100,25 +90,15 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
   };
 
   return (
-    <div 
-      draggable 
-      onDragStart={handleDragStart}
-      className="flex flex-col items-center gap-1 group w-24 cursor-grab active:cursor-grabbing relative z-10"
-    >
+    <div draggable onDragStart={handleDragStart} className="flex flex-col items-center gap-1 group w-24 cursor-grab active:cursor-grabbing relative z-10">
       <div className={`w-20 h-20 bg-[#f4d0a3] border-4 ${getSlotColor(item?.category)} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform relative`}>
           <img 
             src={getImagePath(item)} 
             className="w-12 h-12 object-contain" 
             style={{ imageRendering: 'pixelated' }} 
-            alt={item?.name || "item"} 
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            alt={item?.name} 
           />
-          
-          <button 
-            onClick={(e) => { e.stopPropagation(); onSellItem(invSlot._id); }}
-            className="absolute -top-2 -right-2 bg-red-600 border-2 border-black p-1 hidden group-hover:block hover:bg-red-700 shadow-md"
-            title="Sell Item"
-          >
+          <button onClick={(e) => { e.stopPropagation(); onSellItem(invSlot._id); }} className="absolute -top-2 -right-2 bg-red-600 border-2 border-black p-1 hidden group-hover:block hover:bg-red-700 shadow-md">
             <Trash2 size={12} color="white" />
           </button>
       </div>
@@ -143,25 +123,18 @@ const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
           if (id) onEquipDrop(id, slotId);
         }} 
         draggable={!!equippedItem}
-        onDragStart={(e) => {
-          if (equippedItem) e.dataTransfer.setData('unequipId', equippedItem._id);
-        }}
+        onDragStart={(e) => { if (equippedItem) e.dataTransfer.setData('unequipId', equippedItem._id); }}
         className={`w-24 h-24 border-4 flex items-center justify-center shadow-inner relative transition-all 
           ${equippedItem ? `bg-[#fdf6e3] ${getSlotColor(slotId)} cursor-grab scale-105 shadow-lg` : `bg-[#d4a373] ${getSlotColor(slotId)} opacity-40`}`}
       >
         {item ? (
-          <img 
-            src={getImagePath(item)} 
-            className="w-16 h-16 object-contain" 
-            style={{ imageRendering: 'pixelated' }} 
-            alt={item.name}
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-          />
+          <img src={getImagePath(item)} className="w-16 h-16 object-contain" style={{ imageRendering: 'pixelated' }} alt={item.name} />
         ) : (
           <div className="text-[#5d3a1a] opacity-30 text-xl font-bold uppercase" style={{ fontFamily: "'VT323', monospace" }}>{label}</div>
         )}
       </div>
-      {/* Name Fix: Displays item name if equipped, otherwise 'Head', 'Body', etc. */}
+      
+      {/* 🎯 FORCE NAME DISPLAY: This ensures "Mage Robes" shows instead of "Body" */}
       <span className="font-bold text-[#5d3a1a] text-xl uppercase tracking-tighter text-center leading-none" style={{ fontFamily: "'VT323', monospace" }}>
         {item ? item.name : label}
       </span>
@@ -170,25 +143,15 @@ const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
 };
 
 // --- MAIN INVENTORY ---
-export const Inventory = ({ 
-  inventory = [], 
-  onEquipItem, 
-  onUnequipItem, 
-  onMoveItem, 
-  onSellItem 
-}: any) => {
+export const Inventory = ({ inventory = [], onEquipItem, onUnequipItem, onMoveItem, onSellItem }: any) => {
   const [activeTab, setActiveTab] = useState<'items' | 'equipment' | 'pets'>('equipment');
-
-  // Defensive: Force inventory to be an array so .find() and .filter() never fail
   const safeInventory = Array.isArray(inventory) ? inventory : [];
   
-  // Optional chaining added to find logic
   const equippedHead = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Head');
   const equippedBody = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Body');
   const equippedAccessory = safeInventory.find(i => i?.isEquipped && i?.equippedSlot === 'Accessory');
 
   const renderFixedGrid = () => {
-    // Filter items based on the active tab
     const filteredBag = safeInventory.filter(inv => {
         if (!inv || !inv.item || inv.isEquipped) return false;
         const cat = inv.item.category;
@@ -197,43 +160,31 @@ export const Inventory = ({
         if (activeTab === 'items') return cat === 'Consumable' || cat === 'Quest' || cat === 'Scroll';
         return true;
     });
-
     const grid = [];
-    // We render 20 slots for a consistent backpack look
     for (let i = 0; i < 20; i++) {
       const itemInSlot = filteredBag.find(inv => inv.gridIndex === i);
-      if (itemInSlot && itemInSlot.item) {
-        grid.push(<GridItem key={itemInSlot._id || i} invSlot={itemInSlot} onSellItem={onSellItem} />);
-      } else {
-        grid.push(<EmptyGridSlot key={`empty-${i}`} index={i} onUnequipToSlot={onUnequipItem} onMoveItem={onMoveItem} />);
-      }
+      if (itemInSlot && itemInSlot.item) grid.push(<GridItem key={itemInSlot._id || i} invSlot={itemInSlot} onSellItem={onSellItem} />);
+      else grid.push(<EmptyGridSlot key={`empty-${i}`} index={i} onUnequipToSlot={onUnequipItem} onMoveItem={onMoveItem} />);
     }
     return grid;
   };
 
   return (
-    <div className="h-full flex flex-col pt-4 animate-in fade-in duration-500">
-      {/* TAB NAVIGATION */}
+    <div className="h-full flex flex-col pt-4">
       <div className="flex gap-2 px-8 border-b-4 border-[#5d3a1a] bg-[#3e2723]/20">
         <TabButton label="Equipment" active={activeTab === 'equipment'} onClick={() => setActiveTab('equipment')} />
         <TabButton label="Pets / Misc" active={activeTab === 'pets'} onClick={() => setActiveTab('pets')} />
         <TabButton label="Scrolls/Items" active={activeTab === 'items'} onClick={() => setActiveTab('items')} />
       </div>
-
       <div className="flex-1 bg-[#fdf6e3] p-8 flex flex-col lg:flex-row gap-12 min-h-0">
-        
-        {/* LEFT PANEL: EQUIPPED CHARACTER SLOTS */}
         <div className="w-full lg:w-1/4 flex flex-row lg:flex-col gap-8 items-center justify-center border-b-4 lg:border-b-0 lg:border-r-4 border-[#d4c5a9] pb-8 lg:pb-0 lg:pr-12 border-dashed shrink-0">
            <ItemSlot label="Head" slotId="Head" equippedItem={equippedHead} onEquipDrop={onEquipItem} />
            <ItemSlot label="Body" slotId="Body" equippedItem={equippedBody} onEquipDrop={onEquipItem} />
            <ItemSlot label="Accessory" slotId="Accessory" equippedItem={equippedAccessory} onEquipDrop={onEquipItem} />
         </div>
-
-        {/* RIGHT PANEL: BACKPACK GRID */}
         <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-8 justify-items-center auto-rows-max overflow-y-auto pr-4 custom-scrollbar">
            {renderFixedGrid()}
         </div>
-
       </div>
     </div>
   );
