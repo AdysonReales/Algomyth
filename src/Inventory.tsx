@@ -24,31 +24,41 @@ const getSlotColor = (category: string | undefined) => {
 
 // --- SMART PATH RESOLVER ---
 // This looks at your exact folder structure from the screenshot
+// --- SMART PATH RESOLVER ---
 const getImagePath = (item: any) => {
     if (!item || !item.image) return '';
     
-    // If DB already has the full path, use it
-    if (item.image.includes('/assets/')) {
-        return item.image.startsWith('/') ? item.image : `/${item.image}`;
+    const img = item.image; // e.g., "Flyte.png"
+    const name = item.name?.toLowerCase() || '';
+    const imgLower = img.toLowerCase();
+    const cat = item.category?.toLowerCase() || '';
+
+    // 1. Check for specific Accessory sub-folders
+    if (imgLower.includes('flyte'))    return `/assets/accessory/Flyte/${img}`;
+    if (imgLower.includes('gryfon'))   return `/assets/accessory/Gryfon/${img}`;
+    if (imgLower.includes('igalyph'))  return `/assets/accessory/Igalyph/${img}`;
+    if (imgLower.includes('laguna'))   return `/assets/accessory/Laguna/${img}`;
+    if (imgLower.includes('nimblithe')) return `/assets/accessory/Nimblithe/${img}`;
+    if (imgLower.includes('wolfren'))  return `/assets/accessory/Wolfren/${img}`;
+
+    // 2. Class Armor logic (always in items)
+    if (imgLower.includes('mage') || imgLower.includes('knight') || imgLower.includes('rogue')) {
+        return `/assets/items/${img}`;
     }
 
-    const cat = item.category?.toLowerCase() || '';
-    const name = item.name?.toLowerCase() || '';
-
-    // Route to /assets/body/
-    if (cat === 'body' || name.includes('wings') || name.includes('shift') || name.includes('robe')) {
-        return `/assets/body/${item.image}`;
+    // 3. Wings/Shift logic (always in body)
+    if (cat === 'body' || name.includes('wings') || name.includes('shift')) {
+        return `/assets/body/${img}`;
     }
     
-    // Route to /assets/accessory/
+    // 4. Fallback for any other accessories or pets
     if (cat === 'accessory' || cat === 'pet') {
-        return `/assets/accessory/${item.image}`;
+        return `/assets/accessory/${img}`;
     }
 
-    // Default route to /assets/items/
-    return `/assets/items/${item.image}`;
+    // 5. Absolute Default
+    return `/assets/items/${img}`;
 };
-
 // --- 1. Empty Slot ---
 const EmptyGridSlot = ({ index, onUnequipToSlot, onMoveItem }: any) => {
   const handleDrop = (e: React.DragEvent) => {
