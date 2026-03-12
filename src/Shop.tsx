@@ -138,13 +138,18 @@ export const Shop = ({ onBuyItem, userInventory = [], userData }: { onBuyItem: (
 
 const filteredItems = shopItems.filter(item => {
     const cat = item.category?.toLowerCase();
-    const imageName = item.image?.toLowerCase() || "";
+    const itemName = item.name?.toUpperCase() || ""; // Check the Display Name
 
-    // 1. CLEANUP: Only hide V6 or broken files
-    if (imageName.includes('v6')) return false;
+    // 1. THE DELETE LIST: Hide anything with "HELM" in the name
+    if (itemName.includes('HELM')) {
+      return false;
+    }
+    // 2. THE CLEANUP: Hide V6 if it exists
+    if (itemName.includes('V6')) {
+      return false;
+    }
 
-    // 2. TAB LOGIC: Show everything that matches the current tab
-    // This will bring back Knight, Mage, and Rogue items together
+    // 3. TAB LOGIC: Show everything else that matches the current tab
     if (activeTab === 'market') {
       return cat === 'head' || cat === 'body' || cat === 'consumable';
     }
