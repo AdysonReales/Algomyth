@@ -138,18 +138,22 @@ export const Shop = ({ onBuyItem, userInventory = [], userData }: { onBuyItem: (
 
 const filteredItems = shopItems.filter(item => {
     const cat = item.category?.toLowerCase();
-    const itemClassReq = (item.classReq || 'all').toLowerCase().trim();
-    const normalizedUserClass = userClass.toLowerCase().trim();
+    const imageName = item.image?.toLowerCase() || "";
 
-    // 1. CLASS FILTER: Only show items for your class or 'all'
-    if (itemClassReq !== 'all' && itemClassReq !== normalizedUserClass) {
-      return false;
+    // 1. CLEANUP: Only hide V6 or broken files
+    if (imageName.includes('v6')) return false;
+
+    // 2. TAB LOGIC: Show everything that matches the current tab
+    // This will bring back Knight, Mage, and Rogue items together
+    if (activeTab === 'market') {
+      return cat === 'head' || cat === 'body' || cat === 'consumable';
     }
-
-    // 2. TAB FILTER: Match the current shop tab
-    if (activeTab === 'market') return cat === 'head' || cat === 'body' || cat === 'consumable';
-    if (activeTab === 'customize') return cat === 'pet' || cat === 'accessory' || cat === 'customization';
-    if (activeTab === 'quest') return cat === 'quest';
+    if (activeTab === 'customize') {
+      return cat === 'pet' || cat === 'accessory' || cat === 'customization';
+    }
+    if (activeTab === 'quest') {
+      return cat === 'quest';
+    }
     
     return false;
   });
