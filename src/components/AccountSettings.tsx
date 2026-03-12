@@ -23,7 +23,10 @@ const ARMOR_COLORS = [
 ];
 
 const getAssetUrl = (folder: string, prefix: string, index: number) => {
-  return `/assets/${folder.trim()}/${prefix.trim()}_${index}.png`;
+  // We use the variables EXACTLY as they appear in your 'ls' list.
+  // Since some are lowercase (red) and some are CamelCase (skinV1), 
+  // we just pass them through.
+  return `/assets/${folder}/${prefix}_${index}.png`;
 };
 export const AccountSettings = ({ userData, onUpdate }: { userData: any, onUpdate: () => void }) => {
   // --- IDENTITY STATE ---

@@ -36,7 +36,7 @@ const achievementEmojis: Record<string, string> = {
 };
 
 const getAssetUrl = (folder: string, prefix: string, index: number) => {
-  return new URL(`/src/assets/${folder}/${prefix}_${index}.png`, import.meta.url).href;
+  return new URL(`assets/${folder}/${prefix}_${index}.png`, import.meta.url).href;
 };
 
 
@@ -193,20 +193,20 @@ const AvatarSection = ({ userData, userGold, inventory = [], onRemoveBadge }: an
         <div className="flex gap-8 items-start bg-[#d4a373] p-6 border-4 border-[#5d3a1a] shadow-xl min-w-[450px]">
           <div className="flex flex-col gap-4 items-center">
              <div className="w-48 h-72 bg-[#f4e4bc] border-4 border-[#5d3a1a] flex flex-col items-center justify-center overflow-hidden shadow-inner relative">
-                {bodyGear && <div className="absolute inset-0 flex items-center justify-center z-0"><img src={bodyGear.image} className="w-full h-full object-contain scale-150 -translate-y-12" style={{ imageRendering: 'pixelated' }} /></div>}
+              {bodyGear && <div className="absolute inset-0 flex items-center justify-center z-0"><img src={`/assets/items/${bodyGear.image}`} className="w-full h-full object-contain scale-150 -translate-y-12" style={{ imageRendering: 'pixelated' }} alt="Body Gear" /></div>}
                 <div className="absolute inset-0 w-full h-full p-2 flex items-end justify-center z-10">
                   <img src={getAssetUrl(skinVariant, skinVariant, charIndex)} className="absolute w-full h-[90%] object-contain" style={{ imageRendering: 'pixelated' }} />
                   {armorVariant !== 'default' && <img src={getAssetUrl(armorVariant, armorVariant, charIndex)} className="absolute w-full h-[90%] object-contain" style={{ imageRendering: 'pixelated' }} />}
                 </div>
-                {headGear && <div className="absolute top-8 w-16 h-16 z-20 flex items-center justify-center animate-bounce"><img src={headGear.image} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} /></div>}
-                {accessoryGear && <div className="absolute bottom-6 right-2 w-20 h-20 z-30 drop-shadow-lg"><img src={accessoryGear.image} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} /></div>}
+                {headGear && <div className="absolute top-8 w-16 h-16 z-20 flex items-center justify-center animate-bounce"><img src={`/assets/items/${headGear.image}`} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Head Gear" /></div>}
+                {accessoryGear && <div className="absolute bottom-6 right-2 w-20 h-20 z-30 drop-shadow-lg"><img src={`/assets/items/${accessoryGear.image}`} className="w-full h-full object-contain" style={{ imageRendering: 'pixelated' }} alt="Accessory Gear" /></div>}
                 <span className="absolute bottom-2 text-[10px] font-bold text-[#5d3a1a] opacity-30 uppercase z-50">Algomyth Identity</span>
               </div>
 
              <div className="flex gap-3 w-full justify-between">
                 {[headGear, bodyGear, accessoryGear].map((gear, idx) => (
                   <div key={idx} className="w-14 h-14 bg-[#b88a5f] border-4 border-[#5d3a1a] flex items-center justify-center shadow-inner">
-                    {gear ? ( gear.image.includes('.') ? <img src={gear.image} className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }}/> : <span className="text-2xl">{gear.image}</span>) : <div className="w-8 h-8 bg-[#5d3a1a] opacity-10"></div>}
+                    {gear ? ( gear.image.includes('.') ? <img src={`/assets/items/${gear.image}`} className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }} alt="Gear Item" /> : <span className="text-2xl">{gear.image}</span>) : <div className="w-8 h-8 bg-[#5d3a1a] opacity-10"></div>}
                   </div>
                 ))}
              </div>
@@ -350,7 +350,7 @@ const App = () => {
 
     const bgmPlayer = document.getElementById('global-bgm') as HTMLAudioElement;
     if (bgmPlayer) {
-      const targetTrack = activeTask ? '/src/assets/audio/bgm_code.mp3' : '/src/assets/audio/bgm_main.mp3';
+      const targetTrack = activeTask ? 'assets/audio/bgm_code.mp3' : 'assets/audio/bgm_main.mp3';
       if (!bgmPlayer.src.includes(targetTrack)) {
         bgmPlayer.src = targetTrack;
         bgmPlayer.play().catch(() => console.log("Audio waiting..."));

@@ -3,7 +3,8 @@ import axios from 'axios';
 
 // Vite helper to dynamically load images from src/assets folder
 const getAssetUrl = (folder: string, prefix: string, index: number) => {
-  return new URL(`/src/assets/${folder}/${prefix}_${index}.png`, import.meta.url).href;
+  // Vercel looks at the root for anything that was in the 'public' folder
+  return `/assets/${folder}/${prefix}_${index}.png`;
 };
 
 // Customization Maps
