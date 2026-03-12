@@ -26,27 +26,19 @@ const getSlotColor = (category: string | undefined) => {
 const getImagePath = (item: any) => {
     if (!item || !item.image) return '';
     
-    const img = item.image;
-    
-    // 🎯 THE FIX: If the database string already contains "/assets/", 
-    // return it exactly as is. Don't add more folders!
-    if (img.includes('/assets/')) {
-        return img.startsWith('/') ? img : `/${img}`;
-    }
-
-    // Otherwise, continue with your folder logic
+    // 1. CLEANING: This takes "/assets/items/rogueV1.png" and turns it into just "rogueV1.png"
+    // This stops the "double-nesting" 404 error instantly.
+    const img = item.image.split('/').pop(); 
     const imgLower = img.toLowerCase();
     const name = item.name?.toLowerCase() || '';
     const cat = item.category?.toLowerCase() || '';
 
-    if (imgLower.includes('knight') || imgLower.includes('mage') || imgLower.includes('rogue')) {
+    // 2. CLASS GEAR: If the filename has rogue, mage, or knight, it's in /assets/items/
+    if (imgLower.includes('rogue') || imgLower.includes('mage') || imgLower.includes('knight')) {
         return `/assets/items/${img}`;
     }
 
-    if (cat === 'body' || name.includes('wings') || name.includes('shift')) {
-        return `/assets/body/${img}`;
-    }
-
+    // 3. ACCESSORIES: Hard-coded sub-folder routing based on the item name
     if (cat === 'accessory' || cat === 'pet') {
         if (name.includes('flyte'))     return `/assets/accessory/Flyte/${img}`;
         if (name.includes('gryfon'))    return `/assets/accessory/Gryfon/${img}`;
@@ -57,6 +49,12 @@ const getImagePath = (item: any) => {
         return `/assets/accessory/${img}`;
     }
 
+    // 4. BODY/WINGS: Everything else in the body folder
+    if (cat === 'body' || name.includes('wings') || name.includes('shift') || imgLower.includes('black')) {
+        return `/assets/body/${img}`;
+    }
+    
+    // 5. FINAL FALLBACK: If all else fails, check the items folder
     return `/assets/items/${img}`;
 };
 // --- 1. Empty Slot ---
