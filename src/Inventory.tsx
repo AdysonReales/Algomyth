@@ -83,7 +83,6 @@ const GridItem = ({ invSlot, onSellItem }: any) => {
 const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
   const item = equippedItem?.item;
   
-  // Folder routing for the equipped slot
   const isBodyItem = item?.category?.toLowerCase() === 'body' || item?.name?.toLowerCase().includes('wings');
   const itemPath = isBodyItem ? `/assets/body/${item?.image}` : `/assets/items/${item?.image}`;
 
@@ -108,9 +107,9 @@ const ItemSlot = ({ label, slotId, equippedItem, onEquipDrop }: any) => {
         )}
       </div>
       
-      {/* Name label fix: Shows item name if equipped, otherwise category label */}
+      {/* 🎯 THE FIX: Explicitly toggle between the Item Name and the Slot Label */}
       <span className="font-bold text-[#5d3a1a] text-xl uppercase tracking-tighter text-center leading-none" style={{ fontFamily: "'VT323', monospace" }}>
-        {item?.name ? item.name : label}
+        {item ? item.name : label}
       </span>
     </div>
   );
