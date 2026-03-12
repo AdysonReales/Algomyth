@@ -23,7 +23,7 @@ const ARMOR_COLORS = [
 ];
 
 const getAssetUrl = (folder: string, prefix: string, index: number) => {
-  return new URL(`assets/${folder}/${prefix}_${index}.png`, import.meta.url).href;
+  return new URL(`/public/assets/${folder}/${prefix}_${index}.png`, import.meta.url).href;
 };
 
 export const AccountSettings = ({ userData, onUpdate }: { userData: any, onUpdate: () => void }) => {
